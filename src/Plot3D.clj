@@ -16,13 +16,14 @@
   '(java.awt.event MouseMotionAdapter MouseEvent MouseAdapter MouseWheelListener MouseWheelEvent)
   '(javax.media.opengl GLCanvas GLEventListener GL GLAutoDrawable)
   '(javax.media.opengl.glu GLU)
-  '(com.sun.opengl.util Animator))
+  '(com.sun.opengl.util Animator GLUT))
 
 (defstruct Point :x :y)
 (defstruct Vertex :x :y :z)
 
 (def frame (new JFrame "3D Plot"))
 (def glu (new GLU))
+(def glut (new GLUT))
 
 (def lastDragPoint (ref nil))
 (def currentScale (ref 1.0))
@@ -32,6 +33,14 @@
 (def rotationDegreesZ (ref 0.0))
 
 (def canvas (new GLCanvas))
+
+(defn rotateMatrix [#^GL gl]
+  (if (not= 0.0 @rotationDegreesX) (.glRotated gl @rotationDegreesX 1.0 0.0 0.0))
+  (if (not= 0.0 @rotationDegreesY) (.glRotated gl @rotationDegreesY 0.0 1.0 0.0))
+  (if (not= 0.0 @rotationDegreesZ) (.glRotated gl @rotationDegreesZ 0.0 0.0 1.0)))
+
+(defn scaleMatrix [#^GL gl scale]
+  (if (not= 1.0 scale) (.glScaled gl scale scale scale)))
 
 (defn getRandomVertex []
   (let [x (. Math ceil (* 50 (. Math random)))
@@ -53,33 +62,40 @@
 
 (defn drawAllVertices [#^GL gl vertices]
   (doto gl
-    (.glPointSize 3.0)
-    (.glColor3d 0.0 0.0 1.0)
-    (.glBegin GL/GL_POINTS))
+    (.glPointSize 4.0)
+    (.glBegin GL/GL_POINTS)
+    (.glColor3d 1.0 1.0 1.0))
   (drawVertices gl vertices)
-  (.glEnd gl))
+  (doto gl
+    (.glPointSize 1.0)
+    (.glEnd)))
 
 (defn drawAxes [#^GL gl max]
   (doto gl
     (.glBegin GL/GL_LINES)
-    (.glColor3d 1.0 0.0 0.0)
+    (.glColor3d 1.0 1.0 1.0)
     (.glVertex3d 0.0 0.0 0.0)
     (.glVertex3d max 0.0 0.0)
-    (.glColor3d 0.0 1.0 0.0)
     (.glVertex3d 0.0 0.0 0.0)
     (.glVertex3d 0.0 max 0.0)
-    (.glColor3d 1.0 0.0 1.0)
     (.glVertex3d 0.0 0.0 0.0)
     (.glVertex3d 0.0 0.0 max)
     (.glEnd)))
 
-(defn rotateMatrix [#^GL gl]
-  (if (not= 0.0 @rotationDegreesX) (.glRotated gl @rotationDegreesX 1.0 0.0 0.0))
-  (if (not= 0.0 @rotationDegreesY) (.glRotated gl @rotationDegreesY 0.0 1.0 0.0))
-  (if (not= 0.0 @rotationDegreesZ) (.glRotated gl @rotationDegreesZ 0.0 0.0 1.0)))
+(defn drawChars [chars]
+  (if
+    (seq chars)
+    (do
+      (.glutStrokeCharacter glut GLUT/STROKE_MONO_ROMAN (first chars))
+      (drawChars (rest chars)))))
 
-(defn scaleMatrix [#^GL gl]
-  (if (not= 1.0 @currentScale) (.glScaled gl @currentScale @currentScale @currentScale)))
+(defn drawLabel [#^GL gl label location]
+  (.glPushMatrix gl)
+  (.glTranslated gl (location :x) (location :y) (location :z))
+  (scaleMatrix gl 0.05)
+  (.glColor3d gl 1.0 1.0 1.0)
+  (drawChars label)
+  (.glPopMatrix gl))
 
 (def canvasEventHandler (proxy [GLEventListener] []
   (init [#^GLAutoDrawable drawable]
@@ -88,6 +104,7 @@
         (.glLoadIdentity)
         (.glShadeModel GL/GL_SMOOTH)
         (.glEnable GL/GL_DEPTH_TEST)
+        (.glEnable GL/GL_POINT_SMOOTH)
         (.glHint GL/GL_PERSPECTIVE_CORRECTION_HINT GL/GL_NICEST))))
 
   (display [#^GLAutoDrawable drawable]
@@ -97,10 +114,13 @@
         (.glClear (bit-or GL/GL_COLOR_BUFFER_BIT GL/GL_DEPTH_BUFFER_BIT))
         (.glMatrixMode GL/GL_MODELVIEW)
         (.glLoadIdentity))
-      (scaleMatrix gl)
+      (scaleMatrix gl @currentScale)
       (rotateMatrix gl)
       (drawAxes gl 100.0)
       (drawAllVertices gl vertices)
+      (drawLabel gl "X" (struct Vertex 100.0 0.0 0.0))
+      (drawLabel gl "Y" (struct Vertex 0.0 100.0 0.0))
+      (drawLabel gl "Z" (struct Vertex 0.0 0.0 100.0))
       (.glFlush gl)))
 
   (reshape
@@ -132,7 +152,7 @@
         (dosync
           (ref-set currentScale 1.0)
           (ref-set rotationDegreesX 0.0) (ref-set rotationDegreesY 0.0) (ref-set rotationDegreesZ 0.0))
-          (.display canvas))))))
+        (.display canvas))))))
 
 (def mouseWheelHandler (proxy [MouseWheelListener] []
   (mouseWheelMoved [#^MouseWheelEvent event]
@@ -142,17 +162,15 @@
       (.display canvas)))))
 
 (defn main []
-  (let []
-    (.addMouseListener canvas mouseHandler)
-    (.addMouseMotionListener canvas mouseMotionHandler)
-    (.addMouseWheelListener canvas mouseWheelHandler)
-    (.addGLEventListener canvas canvasEventHandler)
-    (.addMouse
-      (. canvas (setPreferredSize (new Dimension 400 300)))
-      (.. frame (getContentPane) (add canvas))
-      (doto frame
-        (.setSize 400 300)
-        (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
-        (.pack)
-        (.setVisible true))
-      (.requestFocus canvas))))
+  (.addMouseListener canvas mouseHandler)
+  (.addMouseMotionListener canvas mouseMotionHandler)
+  (.addMouseWheelListener canvas mouseWheelHandler)
+  (.addGLEventListener canvas canvasEventHandler)
+  (. canvas (setPreferredSize (new Dimension 800 600)))
+  (.. frame (getContentPane) (add canvas))
+  (doto frame
+    (.setSize 800 600)
+    (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
+    (.pack)
+    (.setVisible true))
+  (.requestFocus canvas))
