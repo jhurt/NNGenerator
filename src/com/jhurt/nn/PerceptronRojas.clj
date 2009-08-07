@@ -14,14 +14,11 @@
 
 (ns com.jhurt.nn.PerceptronRojas)
 (use 'com.jhurt.Math)
+(use 'com.jhurt.nn.Input)
 
 ;the weights of the vector, this will be set upon completion of the training of the perceptron
 (def theWeights (ref []))
 
-(def AND-table {[0 0 1] 0
-                [0 1 1] 0
-                [1 0 1] 0
-                [1 1 1] 1})
 
 (defn getWeights [numberOfWeights]
   (repeat numberOfWeights 0.5))

@@ -9,37 +9,47 @@
 ;;
 ;;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns com.jhurt.nn.ActivationFunctions)
+(ns com.jhurt.UI)
 
-;; Neuron Activation Functions
+(import
+  '(javax.swing JFrame JPanel JButton JFileChooser GrayFilter)
+  '(javax.swing.filechooser FileFilter)
+  '(java.awt.event ActionListener)
+  '(java.awt.image BufferedImage ImageObserver FilteredImageSource)
+  '(java.io File)
+  '(javax.imageio ImageIO)
+  '(java.awt Graphics))
 
-;threshold
-(defn threshold [x] (if (>= x 0.0) 1.0 0.0))
+(def perceptronRojasButton (doto (new JButton "Train Single Perceptron (Rojas)")
+  (.addActionListener
+      (proxy [ActionListener] []
+        (actionPerformed [e])))))
 
-;signum (threshold)
-;(defn signum [x] (cond (> x 0.0) 1.0 (= x 0.0) 0.0 (< x 0.0) -1.0))
-(defn signum [x] (cond (> x 0.0) 1.0 (<= x 0.0) -1.0))
+(def perceptronHaykinButton (doto (new JButton "Train Single Perceptron (Haykin)")
+  (.addActionListener
+    (proxy [ActionListener] []
+      (actionPerformed [e])))))
 
-;piecewise linear
-(defn piecewise [x] (cond (>= x 0.5) 1.0 (and (>  x -0.5) (< x 0.5)) x (<= x -0.5) 0.0))
+(def clustererButton (doto (new JButton "Train For Clustering")
+  (.addActionListener
+    (proxy [ActionListener] []
+      (actionPerformed [e])))))
 
-;logistic (sigmoidal)
-(defn sigmoid [x slopeParameter] (/ 1.0 (+ 1.0 (Math/exp (* -1.0 (* x slopeParameter))))))
+(def pcaButton (doto (new JButton "Train For PCA")
+  (.addActionListener
+    (proxy [ActionListener] []
+      (actionPerformed [e])))))
 
-;hyberbolic tangent (sigmoidal)
-(defn hyperbolicTangent [x] (Math/tanh x))
+(def buttonPanel (doto (new JPanel)
+  (.add perceptronRojasButton)
+  (.add perceptronHaykinButton)
+  (.add clustererButton)
+  (.add pcaButton)))
 
-;arctangent (sigmoidal)
-(defn arcTangent [x] (Math/atan x))
-
-;gompertz curve (sigmoidal)
-; a is the upper asymptote
-; c is the growth rate
-; b, c are negative numbers
-(defn gompertzCurve [x a b c] (* a (Math/pow Math/E (* b (Math/pow Math/E (* c x))))))
-
-;algebraic sigmoid
-(defn algebraicSigmoid [x] (/ x (Math/sqrt (+ 1.0 (Math/pow x 2.0)))))
-
-
-
+(defn loadUI []
+  (let [frame (new JFrame "Neural Network UI")]
+    (doto frame
+      (.setDefaultCloseOperation (JFrame/EXIT_ON_CLOSE))
+      (.add buttonPanel)
+      (.setSize 400 170)
+      (.setVisible true))))

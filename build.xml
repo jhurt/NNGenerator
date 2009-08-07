@@ -41,10 +41,12 @@
             <arg value="com.jhurt.Math"/>
             <arg value="com.jhurt.Plot3D"/>
             <arg value="com.jhurt.nn.ActivationFunctions"/>
+            <arg value="com.jhurt.nn.Input"/>
             <arg value="com.jhurt.nn.Clusterer"/>
-            <!--<arg value="com.jhurt.nn.FirstPrincipalComponent"/>-->
+            <arg value="com.jhurt.nn.FirstPrincipalComponent"/>
             <arg value="com.jhurt.nn.PerceptronHaykin"/>
             <arg value="com.jhurt.nn.PerceptronRojas"/>
+            <arg value="com.jhurt.UI"/>
         </java>
     </target>
 

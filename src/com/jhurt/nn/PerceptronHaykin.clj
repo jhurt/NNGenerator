@@ -15,11 +15,7 @@
 (ns com.jhurt.nn.PerceptronHaykin)
 (use 'com.jhurt.Math)
 (use 'com.jhurt.nn.ActivationFunctions)
-
-;; Binary Logic Input/Output
-
-(def infiniteInputCollection (cycle [[[1.0 1.0 1.0]] [[1.0 -1.0 1.0]] [[1.0 1.0 -1.0]] [[1.0 -1.0 -1.0]]]))
-(def infiniteAndOutputCollection (cycle [1.0 -1.0 -1.0 -1.0]))
+(use 'com.jhurt.nn.Input)
 
 (defn buildInputs [numberOfInputs]
   (loop [inputVector []

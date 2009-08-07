@@ -23,9 +23,9 @@
 (defstruct Point :x :y)
 (defstruct Vertex :x :y :z)
 
-(def frame (new JFrame "3D Plot"))
 (def glu (new GLU))
 (def glut (new GLUT))
+(def canvas (new GLCanvas))
 
 (def lastDragPoint (ref nil))
 (def currentScale (ref 1.0))
@@ -33,8 +33,6 @@
 (def rotationDegreesX (ref 0.0))
 (def rotationDegreesY (ref 0.0))
 (def rotationDegreesZ (ref 0.0))
-
-(def canvas (new GLCanvas))
 
 (defn rotateMatrix [#^GL gl]
   (if (not= 0.0 @rotationDegreesX) (.glRotated gl @rotationDegreesX 1.0 0.0 0.0))
@@ -163,6 +161,7 @@
       (.display canvas)))))
 
 (defn main []
+  (let [frame (new JFrame "3D Plot")]
   (.addMouseListener canvas mouseHandler)
   (.addMouseMotionListener canvas mouseMotionHandler)
   (.addMouseWheelListener canvas mouseWheelHandler)
@@ -174,4 +173,4 @@
     (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
     (.pack)
     (.setVisible true))
-  (.requestFocus canvas))
+  (.requestFocus canvas)))
