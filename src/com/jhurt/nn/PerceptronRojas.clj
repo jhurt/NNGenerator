@@ -12,7 +12,10 @@
 ;; an implementation of the perceptron convergence algorithm as
 ;; described in R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996, pp 85
 
-;the weights of the vector, this will be set during upon completion of the training of the perceptron
+(ns com.jhurt.nn.PerceptronRojas)
+(use 'com.jhurt.Math)
+
+;the weights of the vector, this will be set upon completion of the training of the perceptron
 (def theWeights (ref []))
 
 (def AND-table {[0 0 1] 0
@@ -23,21 +26,6 @@
 (defn getWeights [numberOfWeights]
   (repeat numberOfWeights 0.5))
 
-(defn transposeArray [array]
-  (map (fn [& column] column) array))
-
-(defn multiplyScalar [array scalar]
-  (map * (repeat (count array) scalar) array))
-
-(defn weightsTransposeByInputs [weights inputs]
-  (reduce + (map * (map first (transposeArray weights)) inputs)))
-
-(defn weightsLessInputs [weights inputs]
-  (map - weights inputs))
-
-(defn weightsPlusInputs [weights inputs]
-  (map + weights inputs))
-
 (defn correctAndWeights [initialWeights initialInputs initialNumberCorrect]
   (loop [weights initialWeights
          inputs initialInputs
@@ -46,10 +34,10 @@
     ;terminating condition: all of the inputs have been correctly classified
     (if (= (count AND-table) numberCorrect)
       weights
-      (if (and (<= 0 (weightsTransposeByInputs weights (first inputs))) (= 1 (AND-table (first inputs))))
-          (recur (weightsLessInputs weights (first inputs)) (rest inputs) 0)
-          (if (and (>= 0 (weightsTransposeByInputs weights (first inputs))) (= 0 (AND-table (first inputs))))
-              (recur (weightsPlusInputs weights (first inputs)) (rest inputs) 0)
+      (if (and (<= 0 (arrayTransposeByAnother weights (first inputs))) (= 1 (AND-table (first inputs))))
+          (recur (arrayLessAnother weights (first inputs)) (rest inputs) 0)
+          (if (and (>= 0 (arrayTransposeByAnother weights (first inputs))) (= 0 (AND-table (first inputs))))
+              (recur (arrayPlusAnother weights (first inputs)) (rest inputs) 0)
               (recur weights (rest inputs) (inc numberCorrect)))))))
 
 (defn trainAndWeights []
@@ -57,4 +45,4 @@
     (ref-set theWeights (correctAndWeights (getWeights (count (first (keys AND-table)))) (cycle (keys AND-table)) 0))))
 
 (defn classifyInput [input]
-  (if (> 0 (weightsTransposeByInputs (deref theWeights) input)) 1 0))
+  (if (> 0 (arrayTransposeByAnother @theWeights input)) 1 0))

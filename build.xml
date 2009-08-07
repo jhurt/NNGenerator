@@ -1,0 +1,58 @@
+<?xml version="1.0" ?>
+<project name="NeuralNetwork" default="build">
+    <!--this should point to location of the JOGL jars and the native OpenGL
+    libraries for your plaform (.so for Linux, .dll for windows)-->
+    <property name="jogl.lib.dir" location="/root/jogl-1.1.1-linux-i586/lib" />
+
+    <!--this should point to the location of the Clojure library -->
+    <property name="clojure.lib.dir" location="/root/clojure" />
+
+    <property name="bin.dir" location="bin"/>
+    <property name="source.dir" location="src"/>
+    <property name="nn.jar" location="nn.jar"/>
+
+    <path id="dependencies">
+        <fileset dir="${jogl.lib.dir}">
+            <include name="**/*.jar"/>
+        </fileset>
+        <fileset dir="${clojure.lib.dir}">
+            <include name="clojure.jar"/>
+        </fileset>
+    </path>
+
+    <target name="init">
+        <mkdir dir="${bin.dir}"/>
+    </target>
+
+    <target name="clean" description="Remove generated files">
+        <delete file="${nn.jar}"/>
+        <delete dir="${bin.dir}"/>
+    </target>
+
+    <target name="compile" description="Compile sources">
+        <java fork="true" failonerror="true" classname="clojure.lang.Compile">
+            <jvmarg value="-Djava.library.path=${jogl.lib.dir}"/>
+            <classpath>
+                <path refid="dependencies"/>
+                <path location="${bin.dir}"/>
+                <path location="${source.dir}"/>
+            </classpath>
+            <sysproperty key="clojure.compile.path" value="${bin.dir}"/>
+            <arg value="com.jhurt.Math"/>
+            <arg value="com.jhurt.Plot3D"/>
+            <arg value="com.jhurt.nn.ActivationFunctions"/>
+            <arg value="com.jhurt.nn.Clusterer"/>
+            <!--<arg value="com.jhurt.nn.FirstPrincipalComponent"/>-->
+            <arg value="com.jhurt.nn.PerceptronHaykin"/>
+            <arg value="com.jhurt.nn.PerceptronRojas"/>
+        </java>
+    </target>
+
+    <target name="jar">
+        <jar jarfile="${nn.jar}">
+            <fileset dir="${bin.dir}" includes="**/*.class"/>
+        </jar>
+    </target>
+
+    <target name="build" depends="init, compile, jar"/>
+</project>

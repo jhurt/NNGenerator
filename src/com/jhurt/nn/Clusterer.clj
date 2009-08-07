@@ -12,19 +12,8 @@
 ;; an implementation of a competetive learning clustering algorithm as
 ;; described in R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996, pp 104-105
 
-;normalize a vector by converting it to a unit vector
-(defn normalizeVector [x]
-  (let [length (Math/sqrt (reduce + (map * x x)))]
-    (map / x (repeat (count x) length))))
-
-(defn multiplyScalar [array scalar]
-  (map * (repeat (count array) scalar) array))
-
-(defn transposeArray [array]
-  (map (fn [& column] column) array))
-
-(defn weightsTransposeByInputs [weights inputs]
-  (reduce + (map * (map first (transposeArray weights)) inputs)))
+(ns com.jhurt.nn.Clusterer)
+(use 'com.jhurt.Math)
 
 ;update the closest weight vector m by:
 ;delta m = neta(x - m), so that the correction is proportional to the difference of both vectors
@@ -40,7 +29,7 @@
          closestWeightVector startWeightVector
          highestValue highestValue]
     (if (empty? weights) closestWeightVector
-      (let [currentValue (weightsTransposeByInputs (first weights) input)]
+      (let [currentValue (arrayTransposeByAnother (first weights) input)]
         (if (> highestValue currentValue)
           (recur input (rest weights) (first weights) currentValue)
           (recur input (rest weights) closestWeightVector highestValue))))))
@@ -53,7 +42,7 @@
     (if (empty? inputs)
       weights
       (let [weightsToReplace (getClosestWeightVector (first inputs) (rest weights) (first weights)
-        (weightsTransposeByInputs (first weights) (first inputs)))
-            newWeights (getUpdatedWeights weightsToReplace first inputs)]
+        (arrayTransposeByAnother (first weights) (first inputs)))
+            newWeights (getUpdatedWeights weightsToReplace (first inputs))]
         (recur (replace {weightsToReplace newWeights} weights) (rest inputs))))))
 

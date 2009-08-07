@@ -12,70 +12,9 @@
 ;; an implementation of the perceptron convergence algorithm as described in:
 ;; S. Haykin: Neural Networks: A Comprehensive Foundation, Prentice Hall, 1999, pp 142-143
 
-;; Neuron Activation Functions
-
-;threshold
-(defn threshold [x] (if (>= x 0.0) 1.0 0.0))
-
-;signum (threshold)
-;(defn signum [x] (cond (> x 0.0) 1.0 (= x 0.0) 0.0 (< x 0.0) -1.0))
-(defn signum [x] (cond (> x 0.0) 1.0 (<= x 0.0) -1.0))
-
-;piecewise linear
-(defn piecewise [x] (cond (>= x 0.5) 1.0 (and (>  x -0.5) (< x 0.5)) x (<= x -0.5) 0.0))
-
-;logistic (sigmoidal)
-(defn sigmoid [x slopeParameter] (/ 1.0 (+ 1.0 (Math/exp (* -1.0 (* x slopeParameter))))))
-
-;hyberbolic tangent (sigmoidal)
-(defn hyperbolicTangent [x] (Math/tanh x))
-
-;arctangent (sigmoidal)
-(defn arcTangent [x] (Math/atan x))
-
-;gompertz curve (sigmoidal)
-; a is the upper asymptote
-; c is the growth rate
-; b, c are negative numbers
-(defn gompertzCurve [x a b c] (* a (Math/pow Math/E (* b (Math/pow Math/E (* c x))))))
-
-;algebraic sigmoid
-(defn algebraicSigmoid [x] (/ x (Math/sqrt (+ 1.0 (Math/pow x 2.0)))))
-
-;; Matrix Functions
-
-(defn transpose [matrix]
-  (if (not (nil? matrix))
-      (apply map list matrix)))
-
-(defn transpose2 [matrix]
-  (apply map (fn [& column] column) matrix))
-
-(defn matrixMultiply [matrixA matrixB]
-  (map
-    (fn [row] (apply map (fn [& column] (apply + (map * row column))) matrixB))
-    matrixA))
-
-(defn matrixAdd [matrixA matrixB]
-  (if (and (not (empty? matrixA)) (not (empty? matrixB)))
-      (conj
-        (matrixAdd (rest matrixA) (rest matrixB))
-        (map + (first matrixA) (first matrixB)))))
-
-(defn matrixMultiplyScalar [matrixA scalar]
-  (if (not (empty? matrixA))
-      (conj
-        (matrixMultiplyScalar (rest matrixA) scalar)
-        (map (fn [arg] (* arg scalar)) (first matrixA)))))
-
-;; Vector Functions
-
-(defn transposeVector [v]
-  (if (not (nil? v))
-      (transpose (vector v))))
-
-(defn vectorMultiplyScalar [v scalar]
-  (map * v (cycle [ scalar ])))
+(ns com.jhurt.nn.PerceptronHaykin)
+(use 'com.jhurt.Math)
+(use 'com.jhurt.nn.ActivationFunctions)
 
 ;; Binary Logic Input/Output
 
@@ -113,7 +52,7 @@
   (if (and (not (nil? weights)) (not (nil? inputs)))
       ;;TODO create a function that will apply first to a collection until the inner item is obtained
       ;use a doall to force evaluation to avoid overflowing the stack
-      (signumFunction (first (first (doall (matrixMultiply (transpose weights) inputs)))))))
+      (signumFunction (first (first (doall (matrixMultiply (transposeMatrix weights) inputs)))))))
 
 ;return an updated weight vector of the perceptron
 (defn getAdaptedWeightVector [weights inputs desiredResponse actualResponse]
