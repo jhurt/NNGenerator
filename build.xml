@@ -24,12 +24,12 @@
         <mkdir dir="${bin.dir}"/>
     </target>
 
-    <target name="clean" description="Remove generated files">
+    <target name="clean" description="Remove binary files">
         <delete file="${nn.jar}"/>
         <delete dir="${bin.dir}"/>
     </target>
 
-    <target name="compile" description="Compile sources">
+    <target name="compile" description="Compile Clojure source">
         <java fork="true" failonerror="true" classname="clojure.lang.Compile">
             <jvmarg value="-Djava.library.path=${jogl.lib.dir}"/>
             <classpath>
@@ -40,6 +40,7 @@
             <sysproperty key="clojure.compile.path" value="${bin.dir}"/>
             <arg value="com.jhurt.Math"/>
             <arg value="com.jhurt.Plot3D"/>
+            <arg value="com.jhurt.SwingUtils"/>
             <arg value="com.jhurt.nn.ActivationFunctions"/>
             <arg value="com.jhurt.nn.Input"/>
             <arg value="com.jhurt.nn.Clusterer"/>

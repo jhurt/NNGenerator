@@ -39,6 +39,7 @@
 (defn trainWeights [inputs weights]
   (loop [weights weights
          inputs inputs]
+    (println "current weights: " weights)
     (if (empty? inputs)
       weights
       (let [weightsToReplace (getClosestWeightVector (first inputs) (rest weights) (first weights)

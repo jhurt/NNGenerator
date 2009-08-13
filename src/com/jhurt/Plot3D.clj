@@ -18,10 +18,11 @@
   '(java.awt.event MouseMotionAdapter MouseEvent MouseAdapter MouseWheelListener MouseWheelEvent)
   '(javax.media.opengl GLCanvas GLEventListener GL GLAutoDrawable)
   '(javax.media.opengl.glu GLU)
-  '(com.sun.opengl.util Animator GLUT))
+  '(com.sun.opengl.util GLUT))
 
-(defstruct Point :x :y)
-(defstruct Vertex :x :y :z)
+(defstruct Point2D :x :y)
+(defstruct Point3D :x :y :z)
+(defstruct Line :x :y :z :label)
 
 (def glu (new GLU))
 (def glut (new GLUT))
@@ -29,6 +30,10 @@
 
 (def lastDragPoint (ref nil))
 (def currentScale (ref 1.0))
+
+(def maxCoordinateValue (ref 100.0))
+(def lines (ref []))
+(def vertices (ref []))
 
 (def rotationDegreesX (ref 0.0))
 (def rotationDegreesY (ref 0.0))
@@ -46,7 +51,7 @@
   (let [x (. Math ceil (* 50 (. Math random)))
         z (. Math ceil (* 50 (. Math random)))
         y (* 5 (+ (. Math cos (* x 0.2)) (. Math cos (* z 0.2))))]
-    (struct Vertex x y z)))
+    (struct Point3D x y z)))
 
 (defn getSomeVertices ([] (cons (getRandomVertex) (getSomeVertices 1)))
   ([x]
@@ -57,7 +62,7 @@
   (if (seq vertices)
     (let [vertex (first vertices)]
       (if (not (nil? vertex))
-        (.glVertex3f gl (vertex :x) (vertex :y) (vertex :z)))
+        (.glVertex3d gl (vertex :x) (vertex :y) (vertex :z)))
       (drawVertices gl (rest vertices)))))
 
 (defn drawAllVertices [#^GL gl vertices]
@@ -70,16 +75,35 @@
     (.glPointSize 1.0)
     (.glEnd)))
 
-(defn drawAxes [#^GL gl max]
+(defn drawLines [#^GL gl lines]
+  (if (seq lines)
+    (let [line (first lines)]
+      (if (not (nil? line))
+        (do
+          (.glVertex3d gl 0.0 0.0 0.0)
+          (.glVertex3d gl (line :x) (line :y) (line :z))
+          (drawLines gl (rest lines)))))))
+
+(defn drawAllLines [#^GL gl lines]
+  (doto gl
+    (.glPointSize 4.0)
+    (.glBegin GL/GL_LINES)
+    (.glColor3d 1.0 0.0 0.0))
+  (drawLines gl lines)
+  (doto gl
+    (.glPointSize 1.0)
+    (.glEnd)))
+
+(defn drawAxes [#^GL gl maxCoordinateValue]
   (doto gl
     (.glBegin GL/GL_LINES)
     (.glColor3d 1.0 1.0 1.0)
     (.glVertex3d 0.0 0.0 0.0)
-    (.glVertex3d max 0.0 0.0)
+    (.glVertex3d maxCoordinateValue 0.0 0.0)
     (.glVertex3d 0.0 0.0 0.0)
-    (.glVertex3d 0.0 max 0.0)
+    (.glVertex3d 0.0 maxCoordinateValue 0.0)
     (.glVertex3d 0.0 0.0 0.0)
-    (.glVertex3d 0.0 0.0 max)
+    (.glVertex3d 0.0 0.0 maxCoordinateValue)
     (.glEnd)))
 
 (defn drawChars [chars]
@@ -107,19 +131,19 @@
         (.glHint GL/GL_PERSPECTIVE_CORRECTION_HINT GL/GL_NICEST))))
 
   (display [#^GLAutoDrawable drawable]
-    (let [gl (.getGL drawable)
-          vertices (take 5000 (getSomeVertices))]
+    (let [gl (.getGL drawable)]
       (doto gl
         (.glClear (bit-or GL/GL_COLOR_BUFFER_BIT GL/GL_DEPTH_BUFFER_BIT))
         (.glMatrixMode GL/GL_MODELVIEW)
         (.glLoadIdentity))
       (scaleMatrix gl @currentScale)
       (rotateMatrix gl)
-      (drawAxes gl 100.0)
-      (drawAllVertices gl vertices)
-      (drawLabel gl "X" (struct Vertex 100.0 0.0 0.0))
-      (drawLabel gl "Y" (struct Vertex 0.0 100.0 0.0))
-      (drawLabel gl "Z" (struct Vertex 0.0 0.0 100.0))
+      (drawAxes gl @maxCoordinateValue)
+      (drawAllVertices gl @vertices)
+      (drawAllLines gl @lines)
+      (drawLabel gl "X" (struct Point3D @maxCoordinateValue 0.0 0.0))
+      (drawLabel gl "Y" (struct Point3D 0.0 @maxCoordinateValue 0.0))
+      (drawLabel gl "Z" (struct Point3D 0.0 0.0 @maxCoordinateValue))
       (.glFlush gl)))
 
   (reshape
@@ -131,14 +155,14 @@
 (def mouseMotionHandler (proxy [MouseMotionAdapter] []
   ;Fired once before a sequence of 0 or more mouse drag events
   (mouseMoved [#^MouseEvent event]
-    (dosync (ref-set lastDragPoint (struct Point (.getX event) (.getY event)))))
+    (dosync (ref-set lastDragPoint (struct Point2D (.getX event) (.getY event)))))
   ;Fired many times during a mouse drag
   (mouseDragged [#^MouseEvent event]
     (if (not (nil? lastDragPoint))
       (let [deltaX (- (.getX event) (@lastDragPoint :x))
             deltaY (- (.getY event) (@lastDragPoint :y))]
         (dosync
-          (ref-set lastDragPoint (struct Point (.getX event) (.getY event)))
+          (ref-set lastDragPoint (struct Point2D (.getX event) (.getY event)))
           (alter rotationDegreesY (fn [x] (+ x (/ deltaX 2.0))))
           (alter rotationDegreesZ (fn [x] (+ x (* -1.0 (/ deltaY 4.0)))))
           (alter rotationDegreesX (fn [x] (+ x (/ deltaY 4.0)))))
@@ -160,17 +184,33 @@
       (dosync (ref-set currentScale (* @currentScale scaleAdjustment)))
       (.display canvas)))))
 
-(defn main []
+(defn displayNewPlot [inputVertices weightLines maxCoordinate windowTitle]
+  (let [frame (new JFrame windowTitle)]
+    (dosync (ref-set vertices inputVertices) (ref-set lines weightLines) (ref-set maxCoordinateValue maxCoordinate))
+    (.addMouseListener canvas mouseHandler)
+    (.addMouseMotionListener canvas mouseMotionHandler)
+    (.addMouseWheelListener canvas mouseWheelHandler)
+    (.addGLEventListener canvas canvasEventHandler)
+    (. canvas (setPreferredSize (new Dimension 800 600)))
+    (.. frame (getContentPane) (add canvas))
+    (doto frame
+      (.setSize 800 600)
+      (.setDefaultCloseOperation JFrame/DISPOSE_ON_CLOSE)
+      (.pack)
+      (.setVisible true))
+    (.requestFocus canvas)))
+
+(defn testPlot3D []
   (let [frame (new JFrame "3D Plot")]
-  (.addMouseListener canvas mouseHandler)
-  (.addMouseMotionListener canvas mouseMotionHandler)
-  (.addMouseWheelListener canvas mouseWheelHandler)
-  (.addGLEventListener canvas canvasEventHandler)
-  (. canvas (setPreferredSize (new Dimension 800 600)))
-  (.. frame (getContentPane) (add canvas))
-  (doto frame
-    (.setSize 800 600)
-    (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
-    (.pack)
-    (.setVisible true))
-  (.requestFocus canvas)))
+    (.addMouseListener canvas mouseHandler)
+    (.addMouseMotionListener canvas mouseMotionHandler)
+    (.addMouseWheelListener canvas mouseWheelHandler)
+    (.addGLEventListener canvas canvasEventHandler)
+    (. canvas (setPreferredSize (new Dimension 800 600)))
+    (.. frame (getContentPane) (add canvas))
+    (doto frame
+      (.setSize 800 600)
+      (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
+      (.pack)
+      (.setVisible true))
+    (.requestFocus canvas)))

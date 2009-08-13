@@ -9,7 +9,11 @@
 ;;
 ;;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns com.jhurt.UI)
+(ns com.jhurt.UI
+  (:require [com.jhurt.nn.PerceptronRojas :as PR])
+  ;(:require [com.jhurt.nn.Clusterer as Clusterer])
+  (:use [com.jhurt.SwingUtils :only (doOnEdt)])
+  (:use [com.jhurt.Plot3D :as Plot3D]))
 
 (import
   '(javax.swing JFrame JPanel JButton JFileChooser GrayFilter)
@@ -20,15 +24,34 @@
   '(javax.imageio ImageIO)
   '(java.awt Graphics))
 
+(defn doInNewThread [action]
+  "Launch a new thread to do the action"
+  (.start (Thread. action)))
+
+(defn trainPerceptronRojas []
+  (do
+    (PR/trainAndWeights)
+    (Plot3D/displayNewPlot
+      ;input vertices
+      (list (struct Plot3D/Point3D 0.0 0.0 1.0) (struct Plot3D/Point3D 1.0 0.0 1.0)
+        (struct Plot3D/Point3D 0.0 1.0 1.0) (struct Plot3D/Point3D 1.0 1.0 1.0))
+      ;weight vector lines
+      (list (struct Plot3D/Line
+        (first (deref PR/perceptronWeights))
+        (first (rest (deref PR/perceptronWeights)))
+        (first (rest (rest (deref PR/perceptronWeights))))))
+      20.0
+      "Perceptron Weight Vector")))
+
+;(defn trainClusterer []
+;  (do
+;    (Clusterer/trainWeightVector
+
 (def perceptronRojasButton (doto (new JButton "Train Single Perceptron (Rojas)")
   (.addActionListener
-      (proxy [ActionListener] []
-        (actionPerformed [e])))))
-
-(def perceptronHaykinButton (doto (new JButton "Train Single Perceptron (Haykin)")
-  (.addActionListener
     (proxy [ActionListener] []
-      (actionPerformed [e])))))
+      (actionPerformed [e]
+        (doInNewThread trainPerceptronRojas))))))
 
 (def clustererButton (doto (new JButton "Train For Clustering")
   (.addActionListener
@@ -42,7 +65,6 @@
 
 (def buttonPanel (doto (new JPanel)
   (.add perceptronRojasButton)
-  (.add perceptronHaykinButton)
   (.add clustererButton)
   (.add pcaButton)))
 
@@ -51,5 +73,5 @@
     (doto frame
       (.setDefaultCloseOperation (JFrame/EXIT_ON_CLOSE))
       (.add buttonPanel)
-      (.setSize 400 170)
+      (.setSize 300 100)
       (.setVisible true))))
