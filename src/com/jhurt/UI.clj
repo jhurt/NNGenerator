@@ -11,7 +11,8 @@
 
 (ns com.jhurt.UI
   (:require [com.jhurt.nn.PerceptronRojas :as PR])
-  ;(:require [com.jhurt.nn.Clusterer as Clusterer])
+  (:require [com.jhurt.nn.Clusterer :as Clusterer])
+  (:require [com.jhurt.nn.Input :as Input])
   (:use [com.jhurt.SwingUtils :only (doOnEdt)])
   (:use [com.jhurt.Plot3D :as Plot3D]))
 
@@ -25,8 +26,22 @@
   '(java.awt Graphics))
 
 (defn doInNewThread [action]
-  "Launch a new thread to do the action"
+  "Launch a new thread to do the specified action"
   (.start (Thread. action)))
+
+(defn convertInputsToPoints [inputs]
+  (let [input (first inputs)
+        point (struct Plot3D/Point3D (double (nth input 0)) (double (nth input 1)) (double (nth input 2)))]
+    (if (= 1 (count inputs))
+      (list point)
+      (cons point (convertInputsToPoints (rest inputs))))))
+
+(defn convertWeightVectorsToLines [weightVectors]
+  (let [weights (first weightVectors)
+        line (struct Plot3D/Line (* 100.0 (nth weights 0)) (* 100.0 (nth weights 1)) (* 100.0 (nth weights 2)))]
+    (if (= 1 (count weightVectors))
+      (list line)
+      (cons line (convertWeightVectorsToLines (rest weightVectors))))))
 
 (defn trainPerceptronRojas []
   (do
@@ -43,9 +58,14 @@
       20.0
       "Perceptron Weight Vector")))
 
-;(defn trainClusterer []
-;  (do
-;    (Clusterer/trainWeightVector
+(defn trainClusterer []
+  (let [inputs (Input/getRandomInputVectors 3 100 50)
+        weights (Clusterer/trainWeights (Input/getRandomWeightVectors 3 4) inputs)]
+    (Plot3D/displayNewPlot
+      (convertInputsToPoints inputs)
+      (convertWeightVectorsToLines weights)
+      100.0
+      "Clusterer Weight Vectors")))
 
 (def perceptronRojasButton (doto (new JButton "Train Single Perceptron (Rojas)")
   (.addActionListener
@@ -56,7 +76,8 @@
 (def clustererButton (doto (new JButton "Train For Clustering")
   (.addActionListener
     (proxy [ActionListener] []
-      (actionPerformed [e])))))
+      (actionPerformed [e]
+        (doInNewThread trainClusterer))))))
 
 (def pcaButton (doto (new JButton "Train For PCA")
   (.addActionListener

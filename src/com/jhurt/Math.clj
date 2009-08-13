@@ -11,6 +11,8 @@
 
 (ns com.jhurt.Math)
 
+(def randomNumbers (repeatedly rand))
+
 ;; Matrix Functions
 
 (defn transposeMatrix [matrix]

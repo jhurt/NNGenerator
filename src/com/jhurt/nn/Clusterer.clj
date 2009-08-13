@@ -19,8 +19,8 @@
 ;delta m = neta(x - m), so that the correction is proportional to the difference of both vectors
 (defn getUpdatedWeights [weights input]
   (let [neta 0.8
-        deltas (multiplyScalar neta (map - input weights))]
-    (normalizeVector (map + weights (deltas)))))
+        deltas (multiplyScalar (map - input weights) neta)]
+    (normalizeVector (map + weights deltas))))
 
 ;return a weight vector that lies closest to the input vector
 (defn getClosestWeightVector [input weights startWeightVector highestValue]
@@ -36,11 +36,11 @@
 
 ;train the weight vector
 ;assumes the inputs vectors are already normalized
-(defn trainWeights [inputs weights]
+(defn trainWeights [weights inputs]
   (loop [weights weights
          inputs inputs]
     (println "current weights: " weights)
-    (if (empty? inputs)
+    (if (not (seq inputs))
       weights
       (let [weightsToReplace (getClosestWeightVector (first inputs) (rest weights) (first weights)
         (arrayTransposeByAnother (first weights) (first inputs)))
