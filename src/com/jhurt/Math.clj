@@ -15,14 +15,18 @@
 
 ;; Matrix Functions
 
-(defn transposeMatrix [matrix]
+(defn transposeMatrix2 [matrix]
   (if (not (nil? matrix))
       (apply map list matrix)))
 
-(defn transposeMatrix2 [matrix]
+(defn transposeMatrix [matrix]
   (apply map (fn [& column] column) matrix))
 
 (defn matrixMultiply [matrixA matrixB]
+  "Map a function to each row of matrixA that applies a map
+  of the addition of row-column multiplications to each column of matrixB.
+  The body of this function is lazy and will not be executed
+  if the return value is not read anywhere"
   (map
     (fn [row] (apply map (fn [& column] (apply + (map * row column))) matrixB))
     matrixA))
@@ -33,8 +37,14 @@
         (matrixAdd (rest matrixA) (rest matrixB))
         (map + (first matrixA) (first matrixB)))))
 
+(defn matrixSubtract [matrixA matrixB]
+  (if (and (seq matrixA) (seq matrixB))
+      (conj
+        (matrixSubtract (rest matrixA) (rest matrixB))
+        (map - (first matrixA) (first matrixB)))))
+
 (defn matrixMultiplyScalar [matrixA scalar]
-  (if (not (empty? matrixA))
+  (if (seq matrixA)
       (conj
         (matrixMultiplyScalar (rest matrixA) scalar)
         (map (fn [arg] (* arg scalar)) (first matrixA)))))
@@ -63,9 +73,21 @@
 (defn arrayPlusAnother [x y]
   (map + x y))
 
-;normalize a vector by converting it to a unit vector
 (defn normalizeVector [x]
+  "normalize a vector by converting it to a unit vector"
   (let [length (Math/sqrt (reduce + (map * x x)))]
     (map / x (repeat (count x) length))))
 
+;; Matrix & Vector Functions
+(defn vectorByMatrix [v m]
+  "multiply vector v by matrix m"
+  (map (fn [row] (apply + (map * row v))) (transposeMatrix m)))
 
+(defn matrixByVector [m v]
+  "multiply matrix m by vector v"
+  (map (fn [row] (reduce + (map * row v))) m))
+
+(defn makeMatrix [vectorA vectorB]
+  "return a new matrix out of vectorA and vectorB whose (i,j)th element is the value
+  of vectorA[i] * vectorB[j]"
+  (map (fn [x] (map (fn [y] (* x y)) vectorB)) vectorA))

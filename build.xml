@@ -47,6 +47,7 @@
             <arg value="com.jhurt.nn.FirstPrincipalComponent"/>
             <arg value="com.jhurt.nn.PerceptronHaykin"/>
             <arg value="com.jhurt.nn.PerceptronRojas"/>
+            <arg value="com.jhurt.nn.BackPropagation"/>
             <arg value="com.jhurt.UI"/>
         </java>
     </target>
