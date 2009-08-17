@@ -15,47 +15,67 @@
 (ns com.jhurt.nn.BackPropagation)
 (use 'com.jhurt.Math)
 (use 'com.jhurt.nn.ActivationFunctions)
+(use 'com.jhurt.nn.Input)
 
 ;learning constant defines step length of correction
-(def gamma 0.2)
+(def gamma 0.5)
 
-(defn replace-nth
-  "Returns a list with the n-th item of v replaced by x"
-  [v n x]
-  (concat (take n v) (list x) (drop (inc n) v)))
-
-(defn replace-last
-  "Returns a list with the last item of v replaced by x"
-  [v n x]
-  (concat (take (dec (count v)) v) (list x) (drop (count v) v)))
+(def weights1 (ref nil))
+(def weights2 (ref nil))
 
 (defn trainWeights [inputs outputs inputHiddenLayerWeights hiddenOutputLayerWeights]
   (loop [inputs inputs
          outputs outputs
          inputHiddenLayerWeights inputHiddenLayerWeights
          hiddenOutputLayerWeights hiddenOutputLayerWeights]
-  (if (and (seq inputs) (seq outputs))
-    (let [input (conj (first inputs) 1.0)
-          output (first outputs)
-          ihLayerWeights (replace-last inputHiddenLayerWeights (take (count (first inputHiddenLayerWeights)) (cycle 1.0)))
-          hoLayerWeights (replace-last hiddenOutputLayerWeights (take (count (first hiddenOutputLayerWeights)) (cycle 1.0)))
+    (if (and (seq inputs) (seq outputs))
+      (let [input (conj (first inputs) 1)
+            output (first outputs)
+            ihLayerWeights
+            (replace-last inputHiddenLayerWeights (take (count (first inputHiddenLayerWeights)) (cycle [1.0])))
+            hoLayerWeights
+            (replace-last hiddenOutputLayerWeights (take (count (first hiddenOutputLayerWeights)) (cycle [1.0])))
 
-          ;feed-forward step
-          hiddenLayerOutput (map signum (vectorByMatrix input ihLayerWeights))
-          hiddenLayerDerivative (map * hiddenLayerOutput (map (fn [x] (- 1 x)) hiddenLayerOutput))
-          outputLayerOutput (map signum (vectorByMatrix hiddenLayerOutput hoLayerWeights))
-          outputLayerDerivative (map * outputLayerOutput (map (fn [x] (- 1 x)) outputLayerOutput))
+            ;feed-forward step
+            hiddenLayerOutput (conj (map logistic (vectorByMatrix input ihLayerWeights)) 1.0)
+            hiddenLayerDerivative (map * hiddenLayerOutput (map (fn [x] (- 1.0 x)) hiddenLayerOutput))
+            outputLayerOutput (map logistic (vectorByMatrix hiddenLayerOutput hoLayerWeights))
+            outputLayerDerivative (map * outputLayerOutput (map (fn [x] (- 1.0 x)) outputLayerOutput))
 
-          ;backpropagation to output layer step
-          outputBackPropagatedError (map * outputLayerDerivative (arrayLessAnother outputLayerOutput output))
+            ;backpropagation to output layer step
+            outputBackPropagatedError (map * outputLayerDerivative (arrayLessAnother outputLayerOutput output))
 
-          ;backpropagation to hidden layer step
-          hiddenBackPropagatedError (map * hiddenLayerDerivative
-        (matrixByVector hoLayerWeights outputBackPropagatedError))]
+            ;backpropagation to hidden layer step
+            hiddenBackPropagatedError (map * hiddenLayerDerivative
+          (matrixByVector hoLayerWeights outputBackPropagatedError))]
+        (println "**************************************************")
+        (println "first layer weights: " ihLayerWeights)
+        (println "second layer weights: " hoLayerWeights)
+        (println "input: " input)
+        (println "output: " output)
+        (println "outputBackPropagatedError: " outputBackPropagatedError)
+        (println " hiddenBackPropagatedError: " hiddenBackPropagatedError)
+        (println "hiddenLayerOutput: " hiddenLayerOutput)
+;        (println "hiddenLayerDerivative: " hiddenLayerDerivative)
+        (println "outputLayerOutput: " outputLayerOutput ";")
+;        (println "outputLayerDerivative: " outputLayerDerivative)
 
-          ;update weights and recur step
-          (recur (rest inputs) (rest outputs)
-            (matrixSubtract ihLayerWeights
-              (matrixMultiplyScalar (makeMatrix input hiddenBackPropagatedError) (* -1.0 gamma)))
-            (matrixSubtract hoLayerWeights
-              (matrixMultiplyScalar (makeMatrix hiddenLayerOutput outputBackPropagatedError) (* -1.0 gamma))))))))
+        ;update weights and recur step
+        (recur (rest inputs) (rest outputs)
+          (matrixAdd ihLayerWeights
+            (matrixMultiplyScalar (makeMatrix input hiddenBackPropagatedError) (* -1.0 gamma)))
+          (matrixAdd hoLayerWeights
+            (matrixMultiplyScalar (makeMatrix hiddenLayerOutput outputBackPropagatedError) (* -1.0 gamma)))))
+      (dosync (ref-set weights1 inputHiddenLayerWeights) (ref-set weights2 hiddenOutputLayerWeights)))))
+
+(defn trainXOR [numCycles]
+  (let [inputs (take numCycles (cycle (keys XOR-table)))
+        outputs (take numCycles (cycle (vals XOR-table)))
+        layerOneWeights [[0.5 0.5] [0.5 0.5] [1.0 1.0]]
+        layerTwoWeights [[0.5] [0.5] [1.0]]]
+    (trainWeights inputs outputs layerOneWeights layerTwoWeights)))
+
+(defn classifyInput [input]
+  (let [extendedInput (conj input 1)
+    hiddenLayerOutput (conj (map logistic (vectorByMatrix input @weights1)) 1)]
+    (map logistic (vectorByMatrix hiddenLayerOutput @weights2))))    

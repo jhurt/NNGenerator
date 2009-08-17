@@ -22,6 +22,12 @@
                 [1 0 1] 0
                 [1 1 1] 1})
 
+(def XOR-table {[0 0] [0]
+                [0 1] [1]
+                [1 0] [1]
+                [1 1] [0]})
+
+
 (defn getRandomInput [size]
   (map (fn [x] (* 50.0 x)) (take size (repeatedly rand))))
 

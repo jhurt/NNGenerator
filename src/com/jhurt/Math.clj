@@ -17,7 +17,7 @@
 
 (defn transposeMatrix2 [matrix]
   (if (not (nil? matrix))
-      (apply map list matrix)))
+    (apply map list matrix)))
 
 (defn transposeMatrix [matrix]
   (apply map (fn [& column] column) matrix))
@@ -33,30 +33,30 @@
 
 (defn matrixAdd [matrixA matrixB]
   (if (and (not (empty? matrixA)) (not (empty? matrixB)))
-      (conj
-        (matrixAdd (rest matrixA) (rest matrixB))
-        (map + (first matrixA) (first matrixB)))))
+    (conj
+      (matrixAdd (rest matrixA) (rest matrixB))
+      (map + (first matrixA) (first matrixB)))))
 
 (defn matrixSubtract [matrixA matrixB]
   (if (and (seq matrixA) (seq matrixB))
-      (conj
-        (matrixSubtract (rest matrixA) (rest matrixB))
-        (map - (first matrixA) (first matrixB)))))
+    (conj
+      (matrixSubtract (rest matrixA) (rest matrixB))
+      (map - (first matrixA) (first matrixB)))))
 
 (defn matrixMultiplyScalar [matrixA scalar]
   (if (seq matrixA)
-      (conj
-        (matrixMultiplyScalar (rest matrixA) scalar)
-        (map (fn [arg] (* arg scalar)) (first matrixA)))))
+    (conj
+      (matrixMultiplyScalar (rest matrixA) scalar)
+      (map (fn [arg] (* arg scalar)) (first matrixA)))))
 
 ;; Vector Functions
 
 (defn transposeVector [v]
   (if (not (nil? v))
-      (transposeVector (vector v))))
+    (transposeVector (vector v))))
 
 (defn vectorMultiplyScalar [v scalar]
-  (map * v (cycle [ scalar ])))
+  (map * v (cycle [scalar])))
 
 (defn transposeArray [array]
   (map (fn [& column] column) array))
@@ -67,7 +67,7 @@
 (defn arrayTransposeByAnother [x y]
   (reduce + (map * (map first (transposeArray x)) y)))
 
-(defn arrayLessAnother[x y]
+(defn arrayLessAnother [x y]
   (map - x y))
 
 (defn arrayPlusAnother [x y]
@@ -77,6 +77,16 @@
   "normalize a vector by converting it to a unit vector"
   (let [length (Math/sqrt (reduce + (map * x x)))]
     (map / x (repeat (count x) length))))
+
+(defn replace-nth
+  "Returns a list with the n-th item of v replaced by x"
+  [v n x]
+  (concat (take n v) (list x) (drop (inc n) v)))
+
+(defn replace-last
+  "Returns a list with the last item of v replaced by x"
+  [v x]
+  (concat (take (dec (count v)) v) (list x) (drop (count v) v)))
 
 ;; Matrix & Vector Functions
 (defn vectorByMatrix [v m]

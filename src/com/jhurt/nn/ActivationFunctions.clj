@@ -16,9 +16,12 @@
 ;threshold
 (defn threshold [x] (if (>= x 0.0) 1.0 0.0))
 
+;logistic (sigmoidal)
+(defn logistic [x] (/ 1.0 (+ 1.0 (Math/pow Math/E (* -1.0 x)))))  
+
 ;signum (threshold)
-;(defn signum [x] (cond (> x 0.0) 1.0 (= x 0.0) 0.0 (< x 0.0) -1.0))
-(defn signum [x] (cond (> x 0.0) 1.0 (<= x 0.0) -1.0))
+(defn signum [x] (cond (> x 0.0) 1.0 (= x 0.0) 0.0 (< x 0.0) -1.0))
+;(defn signum [x] (cond (> x 0.0) 1.0 (<= x 0.0) -1.0))
 
 ;piecewise linear
 (defn piecewise [x] (cond (>= x 0.5) 1.0 (and (>  x -0.5) (< x 0.5)) x (<= x -0.5) 0.0))
