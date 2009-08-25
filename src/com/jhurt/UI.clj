@@ -52,10 +52,9 @@
         (struct Plot3D/Point3D 0.0 1.0 1.0) (struct Plot3D/Point3D 1.0 1.0 1.0))
       ;weight vector lines
       (list (struct Plot3D/Line
-        2.5 1.5 -3.5))
-;        (nth (deref PR/perceptronWeights) 0)
-;        (nth (deref PR/perceptronWeights) 1)
-;        (nth (deref PR/perceptronWeights) 2)))
+        (nth (deref PR/perceptronWeights) 0)
+        (nth (deref PR/perceptronWeights) 1)
+        (nth (deref PR/perceptronWeights) 2)))
       10.0
       "Perceptron Weight Vector")))
 

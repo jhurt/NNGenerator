@@ -1,14 +1,19 @@
 <?xml version="1.0" ?>
 <project name="NeuralNetwork" default="build">
+    <!-- this should point to the junit library -->
+    <property name="junit.lib.dir" location="/root/workspace/NeuralNetwork/lib"/>
+
     <!--this should point to location of the JOGL jars and the native OpenGL
     libraries for your plaform (.so for Linux, .dll for windows)-->
-    <property name="jogl.lib.dir" location="/root/jogl-1.1.1-linux-i586/lib" />
+    <property name="jogl.lib.dir" location="/root/jogl-1.1.1-linux-i586/lib"/>
 
     <!--this should point to the location of the Clojure library -->
-    <property name="clojure.lib.dir" location="/root/clojure" />
+    <property name="clojure.lib.dir" location="/root/clojure"/>
 
     <property name="bin.dir" location="bin"/>
+    <property name="test.bin.dir" location="test-bin"/>
     <property name="source.dir" location="src"/>
+    <property name="source.test.dir" location="test/src"/>
     <property name="nn.jar" location="nn.jar"/>
 
     <path id="dependencies">
@@ -20,16 +25,33 @@
         </fileset>
     </path>
 
+    <path id="test-dependencies">
+        <fileset dir="${junit.lib.dir}">
+            <include name="**/*.jar"/>
+        </fileset>
+        <fileset dir="${jogl.lib.dir}">
+            <include name="**/*.jar"/>
+        </fileset>
+        <fileset dir="${clojure.lib.dir}">
+            <include name="clojure.jar"/>
+        </fileset>
+        <fileset dir="${bin.dir}">
+            <include name="**/*.class"/>
+        </fileset>
+    </path>
+
     <target name="init">
         <mkdir dir="${bin.dir}"/>
+        <mkdir dir="${test.bin.dir}"/>
     </target>
 
     <target name="clean" description="Remove binary files">
         <delete file="${nn.jar}"/>
         <delete dir="${bin.dir}"/>
+        <delete dir="${test.bin.dir}"/>
     </target>
 
-    <target name="compile" description="Compile Clojure source">
+    <target name="compile" depends="init" description="Compile Clojure source">
         <java fork="true" failonerror="true" classname="clojure.lang.Compile">
             <jvmarg value="-Djava.library.path=${jogl.lib.dir}"/>
             <classpath>
@@ -52,11 +74,37 @@
         </java>
     </target>
 
+    <target name="compile-tests" depends="compile" description="Compile automated tests">
+        <java fork="true" failonerror="true" classname="clojure.lang.Compile">
+            <jvmarg value="-Djava.library.path=${jogl.lib.dir}"/>
+            <classpath>
+                <path refid="test-dependencies"/>
+                <path location="${test.bin.dir}"/>
+                <path location="${source.test.dir}"/>
+                <path location="${source.dir}"/>
+            </classpath>
+            <sysproperty key="clojure.compile.path" value="${test.bin.dir}"/>
+            <arg value="com.jhurt.MathTest"/>
+        </java>
+    </target>
+
     <target name="jar">
         <jar jarfile="${nn.jar}">
             <fileset dir="${bin.dir}" includes="**/*.class"/>
         </jar>
     </target>
 
-    <target name="build" depends="init, compile, jar"/>
+    <target name="build" depends="clean, compile, jar"/>
+
+    <target name="run-tests" depends="compile-tests">
+        <junit printsummary="yes" fork="yes" haltonfailure="yes">
+            <classpath>
+                <path refid="test-dependencies"/>
+                <pathelement location="${test.bin.dir}"/>
+            </classpath>
+            <formatter type="plain"/>
+            <test name="com.jhurt.MathTest"/>
+        </junit>
+    </target>
+
 </project>

@@ -11,10 +11,10 @@
 
 (ns com.jhurt.Plot3D)
 
-;;use Java OpenGL wrapper, jogl, to display data on a 3D coordinate system
+;;use Swing and Java OpenGL wrapper, JOGL, to display data on a 3D coordinate system
 (import
   '(java.awt Frame Dimension)
-  '(javax.swing JFrame SwingUtilities)
+  '(javax.swing JFrame)
   '(java.awt.event MouseMotionAdapter MouseEvent MouseAdapter MouseWheelListener MouseWheelEvent)
   '(javax.media.opengl GLCanvas GLEventListener GL GLAutoDrawable)
   '(javax.media.opengl.glu GLU)
@@ -51,7 +51,7 @@
   (let [x (. Math ceil (* 50 (. Math random)))
         z (. Math ceil (* 50 (. Math random)))
         y (* 5 (+ (. Math cos (* x 0.2)) (. Math cos (* z 0.2))))]
-    (struct Point3D x y z)))
+    (struct Point3D x z y)))
 
 (defn getSomeVertices ([] (cons (getRandomVertex) (getSomeVertices 1)))
   ([x]
@@ -69,7 +69,7 @@
   (doto gl
     (.glPointSize 4.0)
     (.glBegin GL/GL_POINTS)
-    (.glColor3d 1.0 1.0 1.0))
+    (.glColor3d 0.0 0.0 1.0))
   (drawVertices gl vertices)
   (doto gl
     (.glPointSize 1.0)
@@ -201,7 +201,10 @@
     (.requestFocus canvas)))
 
 (defn testPlot3D []
-  (let [frame (new JFrame "3D Plot")]
+  (let [frame (new JFrame "3D Plot")
+        inputVertices (take 5000 (getSomeVertices))
+        inputLines  (list (struct Line 1.5 1.5 1.0))]
+    (dosync (ref-set vertices inputVertices) (ref-set lines inputLines) (ref-set maxCoordinateValue 65.0))
     (.addMouseListener canvas mouseHandler)
     (.addMouseMotionListener canvas mouseMotionHandler)
     (.addMouseWheelListener canvas mouseWheelHandler)

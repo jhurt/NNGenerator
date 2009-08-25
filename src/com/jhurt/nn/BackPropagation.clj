@@ -18,40 +18,42 @@
 (use 'com.jhurt.nn.Input)
 
 ;learning constant defines step length of correction
-(def gamma 0.5)
+(def gamma 0.1)
 
 (def weights1 (ref nil))
 (def weights2 (ref nil))
 
-(defn trainWeights [inputs outputs layerWeights1 layerWeights2]
+(defn trainWeights [inputs outputs extLayerWeights1 extLayerWeights2]
   (loop [inputs inputs
          outputs outputs
-         layerWeights1 layerWeights1
-         layerWeights2 layerWeights2]
+         extLayerWeights1 extLayerWeights1
+         extLayerWeights2 extLayerWeights2]
     (if (and (seq inputs) (seq outputs))
       (let [input (first inputs)
-            extendedInput (concat input [1])
+            extendedInput (concat input [1.0])
             output (first outputs)
 
             ;the extended weight matrices
-            extLayerWeights1
-            (concat layerWeights1 (vector (take (count (first layerWeights1)) (cycle [1.0]))))
-            extLayerWeights2
-            (concat layerWeights2 (vector (take (count (first layerWeights2)) (cycle [1.0]))))
+            ;            extLayerWeights1
+            ;            (concat layerWeights1 (vector (take (count (first layerWeights1)) (cycle [1.0]))))
+            ;            extLayerWeights2
+            ;            (concat layerWeights2 (vector (take (count (first layerWeights2)) (cycle [1.0]))))
 
             ;feed-forward step
-            layerOutput1 (map logistic (vectorByMatrix extendedInput extLayerWeights1))
+            layerOutput1 (concat (map logistic (vectorByMatrix extendedInput extLayerWeights1)) [1.0])
             layerDerivative1 (map (fn [x] (* x (- 1.0 x))) layerOutput1)
             layerOutput2 (map logistic (vectorByMatrix layerOutput1 extLayerWeights2))
             layerDerivative2 (map (fn [x] (* x (- 1.0 x))) layerOutput2)
 
             ;backpropagation to output layer step
             layerBackPropagatedError2
-              (map * layerDerivative2 (arrayLessAnother layerOutput2 output))
+            (map * layerDerivative2 (arrayLessAnother layerOutput2 output))
 
             ;backpropagation to hidden layer step
             layerBackPropagatedError1
-              (map * layerDerivative1 (matrixByVector layerWeights2 layerBackPropagatedError2))]
+            (map * layerDerivative1 (matrixByVector extLayerWeights2 layerBackPropagatedError2))]
+
+        ;deltaLayerWeights2
 
         (println "\n**************************************************")
         (println "input: " input)
@@ -66,24 +68,26 @@
         (println "outputLayerOutput: " layerOutput2)
         (println "outputLayerDerivative: " layerDerivative2)
         (println "outputBackPropagatedError: " layerBackPropagatedError2)
+        (println "DebugA" (matrixByVector extLayerWeights2 layerBackPropagatedError2))
+        (println "DebugB" (arrayLessAnother layerOutput2 output))
 
         ;update weights and recur step
         (recur (rest inputs) (rest outputs)
-          (matrixSubtract layerWeights1
-            (matrixMultiplyScalar (makeMatrix input layerBackPropagatedError1) gamma))
-          (matrixSubtract layerWeights2
+          (matrixSubtract extLayerWeights1
+            (matrixMultiplyScalar (makeMatrix extendedInput layerBackPropagatedError1) gamma))
+          (matrixSubtract extLayerWeights2
             (matrixMultiplyScalar (makeMatrix layerOutput1 layerBackPropagatedError2) gamma))))
-      (dosync (ref-set weights1 layerWeights1) (ref-set weights2 layerWeights2)))))
+      (dosync (ref-set weights1 extLayerWeights1) (ref-set weights2 extLayerWeights2)))))
 
 (defn trainXOR [numCycles]
   ;TODO replace take with repeatable
   (let [inputs (take numCycles (cycle (keys XOR-table)))
         outputs (take numCycles (cycle (vals XOR-table)))
-        layerOneWeights [[0.1 0.9] [0.3 0.7]]
-        layerTwoWeights [[0.2] [0.9]]]
+        layerOneWeights [[0.3 0.1 0.6 0.5 0.5 0.5 0.5] [0.2 0.34 0.5454 0.5 0.5 0.5 0.5] [0.2 0.4 0.7 0.5 0.5 0.5 0.5]]
+        layerTwoWeights [[0.456] [0.9] [0.5] [0.1] [0.7] [0.5] [0.5] [0.5]]]
     (trainWeights inputs outputs layerOneWeights layerTwoWeights)))
 
 (defn classifyInput [input]
   (let [extendedInput (concat input (list 1))
-    hiddenLayerOutput (concat (map logistic (vectorByMatrix input @weights1)) (list 1))]
+        hiddenLayerOutput (map logistic (vectorByMatrix extendedInput @weights1))]
     (map logistic (vectorByMatrix hiddenLayerOutput @weights2))))    
