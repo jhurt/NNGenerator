@@ -97,7 +97,7 @@
     <target name="build" depends="clean, compile, jar"/>
 
     <target name="run-tests" depends="compile-tests">
-        <junit printsummary="yes" fork="yes" haltonfailure="yes">
+        <junit showoutput="yes" printsummary="on" fork="yes" haltonfailure="yes">
             <classpath>
                 <path refid="test-dependencies"/>
                 <pathelement location="${test.bin.dir}"/>

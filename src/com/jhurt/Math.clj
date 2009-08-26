@@ -11,6 +11,7 @@
 
 (ns com.jhurt.Math)
 
+
 (def randomNumbers (repeatedly rand))
 
 ;; Matrix Functions
@@ -49,11 +50,14 @@
       (matrixMultiplyScalar (rest matrixA) scalar)
       (map (fn [arg] (* arg scalar)) (first matrixA)))))
 
+(defn areListsEqual [x y]
+  (reduce (fn [a b] (and a b)) (map = x y)))
+
 ;; Vector Functions
 
 (defn transposeVector [v]
   (if (not (nil? v))
-    (transposeVector (vector v))))
+    (transposeMatrix (vector v))))
 
 (defn vectorMultiplyScalar [v scalar]
   (map * v (cycle [scalar])))
@@ -101,3 +105,8 @@
   "return a new matrix out of vectorA and vectorB whose (i,j)th element is the value
   of vectorA[i] * vectorB[j]"
   (map (fn [x] (map (fn [y] (* x y)) vectorB)) vectorA))
+
+;TODO put this somewhere else
+(defn weightsByInput [w i]
+  (map (fn [x y] (reduce + (map * (repeat (count x) y) x))) (transposeMatrix w) i))
+

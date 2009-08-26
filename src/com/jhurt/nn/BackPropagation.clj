@@ -18,7 +18,7 @@
 (use 'com.jhurt.nn.Input)
 
 ;learning constant defines step length of correction
-(def gamma 0.1)
+(def gamma 0.4)
 
 (def weights1 (ref nil))
 (def weights2 (ref nil))
@@ -40,9 +40,10 @@
             ;            (concat layerWeights2 (vector (take (count (first layerWeights2)) (cycle [1.0]))))
 
             ;feed-forward step
-            layerOutput1 (concat (map logistic (vectorByMatrix extendedInput extLayerWeights1)) [1.0])
+            layerOutput1 (map logistic (vectorByMatrix extendedInput extLayerWeights1))
+            extLayerOutput1 (concat layerOutput1 [1.0])
             layerDerivative1 (map (fn [x] (* x (- 1.0 x))) layerOutput1)
-            layerOutput2 (map logistic (vectorByMatrix layerOutput1 extLayerWeights2))
+            layerOutput2 (map logistic (vectorByMatrix extLayerOutput1 extLayerWeights2))
             layerDerivative2 (map (fn [x] (* x (- 1.0 x))) layerOutput2)
 
             ;backpropagation to output layer step
@@ -60,31 +61,32 @@
         (println "output: " output)
         (println "-------------------------")
         (println "first layer weights: " extLayerWeights1)
-        (println "hiddenLayerOutput: " layerOutput1)
+        (println "hiddenLayerOutput: " extLayerOutput1)
         (println "hiddenLayerDerivative: " layerDerivative1)
+        (println "debug" (matrixByVector extLayerWeights2 layerBackPropagatedError2))
         (println "hiddenBackPropagatedError: " layerBackPropagatedError1)
         (println "-------------------------")
         (println "second layer weights: " extLayerWeights2)
         (println "outputLayerOutput: " layerOutput2)
         (println "outputLayerDerivative: " layerDerivative2)
         (println "outputBackPropagatedError: " layerBackPropagatedError2)
-        (println "DebugA" (matrixByVector extLayerWeights2 layerBackPropagatedError2))
-        (println "DebugB" (arrayLessAnother layerOutput2 output))
+        (println "A" (matrixMultiplyScalar (makeMatrix extendedInput layerBackPropagatedError1) gamma))
+        (println "B"  (matrixMultiplyScalar (makeMatrix extLayerOutput1 layerBackPropagatedError2) gamma))
 
         ;update weights and recur step
         (recur (rest inputs) (rest outputs)
           (matrixSubtract extLayerWeights1
             (matrixMultiplyScalar (makeMatrix extendedInput layerBackPropagatedError1) gamma))
           (matrixSubtract extLayerWeights2
-            (matrixMultiplyScalar (makeMatrix layerOutput1 layerBackPropagatedError2) gamma))))
+            (matrixMultiplyScalar (makeMatrix extLayerOutput1 layerBackPropagatedError2) gamma))))
       (dosync (ref-set weights1 extLayerWeights1) (ref-set weights2 extLayerWeights2)))))
 
 (defn trainXOR [numCycles]
   ;TODO replace take with repeatable
   (let [inputs (take numCycles (cycle (keys XOR-table)))
         outputs (take numCycles (cycle (vals XOR-table)))
-        layerOneWeights [[0.3 0.1 0.6 0.5 0.5 0.5 0.5] [0.2 0.34 0.5454 0.5 0.5 0.5 0.5] [0.2 0.4 0.7 0.5 0.5 0.5 0.5]]
-        layerTwoWeights [[0.456] [0.9] [0.5] [0.1] [0.7] [0.5] [0.5] [0.5]]]
+        layerOneWeights [[-1.0 2.0] [1.5 -0.5] [1.5 4.5]]
+        layerTwoWeights [[0.456] [2.5] [-1.5]]]
     (trainWeights inputs outputs layerOneWeights layerTwoWeights)))
 
 (defn classifyInput [input]
