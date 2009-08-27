@@ -34,6 +34,6 @@
   "build vector of size y of vectors of length x populated with random values b/w 0 and upperBound"
   (take y (repeatedly (fn [] (take x (repeatedly (fn [] (* upperBound (rand)))))))))
 
-(defn getRandomWeightVectors[x y]
+(defn getRandomWeightVectors[size number]
   "build vector of size y of vectors of length x populated with random values b/w 0 and 1"
-  (take y (repeatedly (fn [] (take x (repeatedly rand))))))
+  (take number (repeatedly (fn [] (take size (repeatedly rand))))))

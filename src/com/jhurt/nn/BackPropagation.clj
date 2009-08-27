@@ -33,12 +33,6 @@
             extendedInput (concat input [1.0])
             output (first outputs)
 
-            ;the extended weight matrices
-            ;            extLayerWeights1
-            ;            (concat layerWeights1 (vector (take (count (first layerWeights1)) (cycle [1.0]))))
-            ;            extLayerWeights2
-            ;            (concat layerWeights2 (vector (take (count (first layerWeights2)) (cycle [1.0]))))
-
             ;feed-forward step
             layerOutput1 (map hyperbolicTangent (vectorByMatrix extendedInput extLayerWeights1))
             extLayerOutput1 (concat layerOutput1 [1.0])
@@ -54,23 +48,6 @@
             layerBackPropagatedError1
             (map * layerDerivative1 (matrixByVector extLayerWeights2 layerBackPropagatedError2))]
 
-;        (println "\n**************************************************")
-;        (println "input: " input)
-;        (println "output: " output)
-;        (println "-------------------------")
-;        (println "first layer weights: " extLayerWeights1)
-;        (println "hiddenLayerOutput: " extLayerOutput1)
-;        (println "hiddenLayerDerivative: " layerDerivative1)
-;        (println "debug" (matrixByVector extLayerWeights2 layerBackPropagatedError2))
-;        (println "hiddenBackPropagatedError: " layerBackPropagatedError1)
-;        (println "-------------------------")
-;        (println "second layer weights: " extLayerWeights2)
-;        (println "outputLayerOutput: " layerOutput2)
-;        (println "outputLayerDerivative: " layerDerivative2)
-;        (println "outputBackPropagatedError: " layerBackPropagatedError2)
-;        (println "A" (matrixMultiplyScalar (makeMatrix extendedInput layerBackPropagatedError1) gamma))
-;        (println "B"  (matrixMultiplyScalar (makeMatrix extLayerOutput1 layerBackPropagatedError2) gamma))
-
         ;update weights and recurse step
         (recur (rest inputs) (rest outputs)
           (matrixSubtract extLayerWeights1
@@ -83,8 +60,8 @@
   ;TODO replace take with repeatable
   (let [inputs (take numCycles (cycle (keys XOR-table)))
         outputs (take numCycles (cycle (vals XOR-table)))
-        layerOneWeights [[-0.3 0.6] [0.9 0.1] [0.7 -0.3333]]
-        layerTwoWeights [[0.3] [0.5] [0.5]]]
+        layerOneWeights (getRandomWeightVectors 2 3)
+        layerTwoWeights (getRandomWeightVectors 1 3)]
     (trainWeights inputs outputs layerOneWeights layerTwoWeights)))
 
 (defn classifyInput [input]
