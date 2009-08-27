@@ -17,7 +17,8 @@
 (defn threshold [x] (if (>= x 0.0) 1.0 0.0))
 
 ;logistic (sigmoidal)
-(defn logistic [x] (/ 1.0 (+ 1.0 (Math/pow Math/E (* -1.0 x)))))  
+(defn logistic [x] (/ 1.0 (+ 1.0 (Math/pow Math/E (* -1.0 x)))))
+(defn logisticDerivative [x] (* x (- 1.0 x)))
 
 ;signum (threshold)
 (defn signum [x] (cond (> x 0.0) 1.0 (= x 0.0) 0.0 (< x 0.0) -1.0))
@@ -31,6 +32,7 @@
 
 ;hyberbolic tangent (sigmoidal)
 (defn hyperbolicTangent [x] (Math/tanh x))
+(defn hyperbolicTangentDerivative [x] (- 1.0 (* x x)))
 
 ;arctangent (sigmoidal)
 (defn arcTangent [x] (Math/atan x))
