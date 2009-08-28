@@ -20,51 +20,81 @@
 ;learning constant defines step length of correction
 (def gamma 0.3)
 
-(def weights1 (ref nil))
-(def weights2 (ref nil))
+(def trainedWeights (ref nil))
 
-(defn trainWeights [inputs outputs extLayerWeights1 extLayerWeights2]
+(defn calculateOutput [activationFn input weights nodeOutputs]
+  (loop [input input
+         nodeOutputs nodeOutputs]
+    (if (= (count weights) (count nodeOutputs))
+      (butlast (last nodeOutputs))
+      (let [index (count nodeOutputs)
+            nodeOutput (map activationFn (vectorByMatrix input (nth weights index)))
+            extNodeOutput (concat nodeOutput [1.0])]
+        (recur extNodeOutput (concat nodeOutputs (list extNodeOutput)))))))
+
+(defn calculateNodeValues [activationFn activationFnDerivative input weights nodeOutputs nodeDerivatives]
+  (loop [input input
+         nodeOutputs nodeOutputs
+         nodeDerivatives nodeDerivatives]
+    (if (= (count weights) (count nodeOutputs))
+      {:nodeOutputs nodeOutputs :nodeDerivatives nodeDerivatives}
+      (let [index (count nodeOutputs)
+            nodeOutput (map activationFn (vectorByMatrix input (nth weights index)))
+            extNodeOutput (concat nodeOutput [1.0])
+            nodeDerivative (map activationFnDerivative extNodeOutput)]
+        (recur extNodeOutput
+          (concat nodeOutputs (list extNodeOutput))
+          (concat nodeDerivatives (list nodeDerivative)))))))
+
+(defn calculateNodeErrors [nodeValues weights actualOutput errors]
+  (loop [errors errors]
+    (if (= (count errors) (count weights))
+      errors
+      (let [index (- (count weights) (inc (count errors)))
+            weightsIndex (inc index)
+            difference (if (= 0 (count errors))
+          (arrayLessAnother (nth (:nodeOutputs nodeValues) index) actualOutput)
+          (matrixByVector (nth weights weightsIndex) (last errors)))
+            error (map * (nth (:nodeDerivatives nodeValues) index) difference)]
+        (recur (concat errors (list error)))))))
+
+(defn getWeightDeltas [extendedInput errors nodeOutputs deltas]
+  (loop [errorIndex (dec (count nodeOutputs))
+         nodeValueIndex -1
+         deltas deltas]
+    (if (= (count nodeOutputs) (count deltas))
+      deltas
+      (let [delta (if (= 0 (count deltas))
+        (matrixMultiplyScalar (makeMatrix extendedInput (nth errors errorIndex)) gamma)
+        (matrixMultiplyScalar
+          (makeMatrix (nth nodeOutputs nodeValueIndex) (nth errors errorIndex)) gamma))]
+        (recur (dec errorIndex) (inc nodeValueIndex) (concat deltas (list delta)))))))
+
+(defn trainWeights [inputs outputs weights]
   (loop [inputs inputs
          outputs outputs
-         extLayerWeights1 extLayerWeights1
-         extLayerWeights2 extLayerWeights2]
+         weights weights]
     (if (and (seq inputs) (seq outputs))
       (let [input (first inputs)
             extendedInput (concat input [1.0])
             output (first outputs)
-
             ;feed-forward step
-            layerOutput1 (map hyperbolicTangent (vectorByMatrix extendedInput extLayerWeights1))
-            extLayerOutput1 (concat layerOutput1 [1.0])
-            layerDerivative1 (map hyperbolicTangentDerivative layerOutput1)
-            layerOutput2 (map hyperbolicTangent (vectorByMatrix extLayerOutput1 extLayerWeights2))
-            layerDerivative2 (map hyperbolicTangentDerivative layerOutput2)
-
-            ;backpropagation to output layer step
-            layerBackPropagatedError2
-            (map * layerDerivative2 (arrayLessAnother layerOutput2 output))
-
-            ;backpropagation to hidden layer step
-            layerBackPropagatedError1
-            (map * layerDerivative1 (matrixByVector extLayerWeights2 layerBackPropagatedError2))]
-
+            nodeValues
+            (calculateNodeValues hyperbolicTangent hyperbolicTangentDerivative extendedInput weights (list) (list))
+            ;backpropagation step
+            errors (calculateNodeErrors nodeValues weights output (list))
+            ;calculate weight deltas
+            deltas (getWeightDeltas extendedInput errors (:nodeOutputs nodeValues) (list))]
         ;update weights and recurse step
-        (recur (rest inputs) (rest outputs)
-          (matrixSubtract extLayerWeights1
-            (matrixMultiplyScalar (makeMatrix extendedInput layerBackPropagatedError1) gamma))
-          (matrixSubtract extLayerWeights2
-            (matrixMultiplyScalar (makeMatrix extLayerOutput1 layerBackPropagatedError2) gamma))))
-      (dosync (ref-set weights1 extLayerWeights1) (ref-set weights2 extLayerWeights2)))))
+        (recur (rest inputs) (rest outputs) (map matrixSubtract weights deltas)))
+      (dosync (ref-set trainedWeights weights)))))
 
 (defn trainXOR [numCycles]
   ;TODO replace take with repeatable
   (let [inputs (take numCycles (cycle (keys XOR-table)))
         outputs (take numCycles (cycle (vals XOR-table)))
-        layerOneWeights (getRandomWeightVectors 2 3)
-        layerTwoWeights (getRandomWeightVectors 1 3)]
-    (trainWeights inputs outputs layerOneWeights layerTwoWeights)))
+        weights (list (getRandomWeightVectors 2 3) (getRandomWeightVectors 1 3))]
+    (trainWeights inputs outputs weights)))
 
 (defn classifyInput [input]
-  (let [extendedInput (concat input (list 1))
-        hiddenLayerOutput (map logistic (vectorByMatrix extendedInput @weights1))]
-    (map logistic (vectorByMatrix hiddenLayerOutput @weights2))))    
+  (calculateOutput hyperbolicTangent (concat input [1.0]) @trainedWeights (list)))
