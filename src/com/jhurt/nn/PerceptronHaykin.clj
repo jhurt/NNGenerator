@@ -53,7 +53,7 @@
 ;return an updated weight vector of the perceptron
 (defn getAdaptedWeightVector [weights inputs desiredResponse actualResponse]
   (let [etaDeltaDesiredActual (* learningRateParameter (- desiredResponse actualResponse))]
-    (println "adapted weight vector" (matrixAdd weights (matrixMultiplyScalar inputs etaDeltaDesiredActual)))
+    (println "adapted weight vector" (matrixAdd weights (multiplyScalar inputs etaDeltaDesiredActual)))
     (println "desiredResponse" desiredResponse)
     (println "actualResponse" actualResponse)
     (println "learningRateParameter" learningRateParameter)
@@ -61,7 +61,7 @@
     (println "weights" weights)
     (println "inputs" inputs "\n")
     (if (not (= 0.0 etaDeltaDesiredActual))
-      (cons 1 (rest (matrixAdd weights (matrixMultiplyScalar inputs etaDeltaDesiredActual))))
+      (cons 1 (rest (matrixAdd weights (multiplyScalar inputs etaDeltaDesiredActual))))
       weights)))
 
 ;train the perceptron with the inputs and corresponding known outputs

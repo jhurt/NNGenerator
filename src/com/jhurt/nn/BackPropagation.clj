@@ -83,8 +83,8 @@
       (if (= (count nodeOutputs) (count deltas))
         deltas
         (let [delta (if (= 0 (count deltas))
-          (matrixMultiplyScalar (makeMatrix extendedInput (nth errors errorIndex)) gamma)
-          (matrixMultiplyScalar
+          (multiplyScalar (makeMatrix extendedInput (nth errors errorIndex)) gamma)
+          (multiplyScalar
             (makeMatrix (nth nodeOutputs nodeValueIndex) (nth errors errorIndex)) gamma))]
           (recur (dec errorIndex) (inc nodeValueIndex) (concat deltas (list delta))))))))
 

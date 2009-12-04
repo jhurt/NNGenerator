@@ -11,7 +11,6 @@
 
 (ns com.jhurt.Math)
 
-
 (def randomNumbers (repeatedly rand))
 
 ;; Matrix Functions
@@ -44,12 +43,6 @@
       (matrixSubtract (rest matrixA) (rest matrixB))
       (map - (first matrixA) (first matrixB)))))
 
-(defn matrixMultiplyScalar [matrixA scalar]
-  (if (seq matrixA)
-    (conj
-      (matrixMultiplyScalar (rest matrixA) scalar)
-      (map (fn [arg] (* arg scalar)) (first matrixA)))))
-
 (defn areListsEqual [x y]
   (reduce (fn [a b] (and a b)) (map = x y)))
 
@@ -59,14 +52,8 @@
   (if (not (nil? v))
     (transposeMatrix (vector v))))
 
-(defn vectorMultiplyScalar [v scalar]
-  (map * v (cycle [scalar])))
-
 (defn transposeArray [array]
   (map (fn [& column] column) array))
-
-(defn multiplyScalar [array scalar]
-  (map * (repeat (count array) scalar) array))
 
 (defn arrayTransposeByAnother [x y]
   (reduce + (map * (map first (transposeArray x)) y)))
@@ -106,7 +93,33 @@
   of vectorA[i] * vectorB[j]"
   (map (fn [x] (map (fn [y] (* x y)) vectorB)) vectorA))
 
+;; Functions shared b/w Matrix and Vector
+(defmulti getArityMulti (fn [a x] (class x)))
+
+(defmethod getArityMulti clojure.lang.ISeq [a x]
+  (getArityMulti (inc a) (first x)))
+
+(defmethod getArityMulti clojure.lang.IPersistentVector [a x]
+  (getArityMulti (inc a) (first x)))
+
+(defmethod getArityMulti :default [a x] a)
+
+(defn getArity [x dummy] (getArityMulti 0 x))
+
+(defmulti multiplyScalar getArity)
+
+(defmethod multiplyScalar 2 [matrixA scalar]
+  (if (seq matrixA)
+    (conj
+      (multiplyScalar (rest matrixA) scalar)
+      (map (fn [arg] (* arg scalar)) (first matrixA)))))
+
+(defmethod multiplyScalar 1 [array scalar]
+  (map * (repeat (count array) scalar) array))
+
+(defmethod multiplyScalar :default [x scalar]
+  (* x scalar))
+
 ;TODO put this somewhere else
 (defn weightsByInput [w i]
   (map (fn [x y] (reduce + (map * (repeat (count x) y) x))) (transposeMatrix w) i))
-

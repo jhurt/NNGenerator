@@ -53,7 +53,7 @@
 
 (defn -testMatrixMultiplyScalar [_]
   (Assert/assertTrue (areListsEqual [[3 3 3] [3 3 3] [3 3 3]]
-    (matrixMultiplyScalar [[1 1 1] [1 1 1] [1 1 1]] 3))))
+    (multiplyScalar [[1 1 1] [1 1 1] [1 1 1]] 3))))
 
 (defn -testTransposeMatrix [_]
   (Assert/assertEquals [[1 3] [2 4]] (transposeMatrix [[1 2] [3 4]]))

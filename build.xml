@@ -1,14 +1,6 @@
 <?xml version="1.0" ?>
 <project name="NeuralNetwork" default="build">
-    <!-- this should point to the junit library -->
-    <property name="junit.lib.dir" location="/root/workspace/NeuralNetwork/lib"/>
-
-    <!--this should point to location of the JOGL jars and the native OpenGL
-    libraries for your plaform (.so for Linux, .dll for windows)-->
-    <property name="jogl.lib.dir" location="/root/jogl-1.1.1-linux-i586/lib"/>
-
-    <!--this should point to the location of the Clojure library -->
-    <property name="clojure.lib.dir" location="/root/clojure"/>
+    <property file="build.properties" />
 
     <property name="bin.dir" location="bin"/>
     <property name="test.bin.dir" location="test-bin"/>
@@ -35,9 +27,8 @@
         <fileset dir="${clojure.lib.dir}">
             <include name="clojure.jar"/>
         </fileset>
-        <fileset dir="${bin.dir}">
-            <include name="**/*.class"/>
-        </fileset>
+        <pathelement path="${bin.dir}" />
+        
     </path>
 
     <target name="init">
