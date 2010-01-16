@@ -1,4 +1,4 @@
-;;Copyright (c) 2009, University of Nevada, Las Vegas
+;;Copyright (c) 2010, University of Nevada, Las Vegas
 ;;All rights reserved.
 ;;
 ;;Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -90,7 +90,7 @@
 
 (defn trainNetwork [inputs outputs weights desiredRms]
   "Train the network with the given inputs/outputs and initial weight set.
-   Training terminates when either the error of the network is less than the
+   Training terminates when either the error of the network is less th2an the
    desiredRMS or when there are no more training samples"
   (loop [inputs inputs
          outputs outputs

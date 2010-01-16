@@ -9,42 +9,48 @@
 ;;
 ;;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns com.jhurt.nn.ActivationFunctions)
+(ns com.jhurt.NNGenerator
+  (:require [com.jhurt.nn.PerceptronRojas :as PR])
+  (:require [com.jhurt.nn.Clusterer :as Clusterer])
+  (:require [com.jhurt.nn.Input :as Input])
+  (:use [com.jhurt.SwingUtils])
+  (:use [com.jhurt.ThreadUtils]))
 
-;; Neuron Activation Functions
-
-;threshold
-(defn threshold [x] (if (>= x 0.0) 1.0 0.0))
-
-;logistic (sigmoidal)
-(defn logistic [x] (/ 1.0 (+ 1.0 (Math/pow Math/E (* -1.0 x)))))
-(defn logisticDerivative [x] (* x (- 1.0 x)))
-
-;signum (threshold)
-(defn signum [x] (cond (> x 0.0) 1.0 (= x 0.0) 0.0 (< x 0.0) -1.0))
-;(defn signum [x] (cond (> x 0.0) 1.0 (<= x 0.0) -1.0))
-
-;piecewise linear
-(defn piecewise [x] (cond (>= x 0.5) 1.0 (and (>  x -0.5) (< x 0.5)) x (<= x -0.5) 0.0))
-
-;logistic (sigmoidal)
-(defn sigmoid [x slopeParameter] (/ 1.0 (+ 1.0 (Math/exp (* -1.0 (* x slopeParameter))))))
-
-;hyberbolic tangent (sigmoidal)
-(defn hyperbolicTangent [x] (Math/tanh x))
-(defn hyperbolicTangentDerivative [x] (- 1.0 (* x x)))
-
-;arctangent (sigmoidal)
-(defn arcTangent [x] (Math/atan x))
-
-;gompertz curve (sigmoidal)
-; a is the upper asymptote
-; c is the growth rate
-; b, c are negative numbers
-(defn gompertzCurve [x a b c] (* a (Math/pow Math/E (* b (Math/pow Math/E (* c x))))))
-
-;algebraic sigmoid
-(defn algebraicSigmoid [x] (/ x (Math/sqrt (+ 1.0 (Math/pow x 2.0)))))
+(import
+  '(javax.swing JFrame JMenu JMenuBar JMenuItem JPanel)
+  '(java.awt.event ActionListener))
 
 
 
+;(def clustererButton (doto (new JButton "Train For Clustering")
+;  (.addActionListener
+;    (proxy [ActionListener] []
+;      (actionPerformed [e]
+;        (doInNewThread trainClusterer))))))
+
+
+(defn exit []
+  (System/exit 0))
+
+(def exitMenuItem (doto (new JMenuItem "Exit")
+  (.addActionListener (proxy [ActionListener] []
+    (actionPerformed [e] (exit))))))
+
+(def trainMenuItem (new JMenuItem "Train"))
+
+(def fileMenu (doto (new JMenu "File")
+  (.add trainMenuItem)
+  (.addSeparator)
+  (.add exitMenuItem)))
+
+(def menuBar (doto (new JMenuBar)
+  (.add fileMenu)))
+
+(defn -main [s]
+  (let [frame (new JFrame "Neural Network UI")]
+  	(setSizeBasedOnResolution frame)
+    ;(.. frame (getContentPane) (add
+    (doto frame
+      (.setDefaultCloseOperation (JFrame/EXIT_ON_CLOSE))
+      (.setJMenuBar menuBar)
+      (.setVisible true))))

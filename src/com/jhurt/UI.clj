@@ -1,4 +1,4 @@
-;;Copyright (c) 2009, University of Nevada, Las Vegas
+;;Copyright (c) 2010, University of Nevada, Las Vegas
 ;;All rights reserved.
 ;;
 ;;Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -89,7 +89,7 @@
   (.add clustererButton)
   (.add pcaButton)))
 
-(defn loadUI []
+(defn -main [s]
   (let [frame (new JFrame "Neural Network UI")]
     (doto frame
       (.setDefaultCloseOperation (JFrame/EXIT_ON_CLOSE))

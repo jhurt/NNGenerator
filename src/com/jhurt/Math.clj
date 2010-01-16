@@ -1,4 +1,4 @@
-;;Copyright (c) 2009, University of Nevada, Las Vegas
+;;Copyright (c) 2010, University of Nevada, Las Vegas
 ;;All rights reserved.
 ;;
 ;;Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
@@ -51,7 +51,6 @@
 (defn transposeVector [v]
   (if (not (nil? v))
     (transposeMatrix (vector v))))
-
 (defn transposeArray [array]
   (map (fn [& column] column) array))
 
