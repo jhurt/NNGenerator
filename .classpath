@@ -2,8 +2,12 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="lib" path="/Users/jleehurt/Documents/workspace/NeuralNetwork/clojure.jar" sourcepath="/Users/jleehurt/Documents/workspace/NeuralNetwork/clojure-src.jar"/>
-	<classpathentry kind="lib" path="/Users/jleehurt/Documents/workspace/NeuralNetwork/clojure-contrib.jar" sourcepath="/Users/jleehurt/Documents/workspace/NeuralNetwork/clojure-contrib-src.jar"/>
 	<classpathentry kind="lib" path="/Users/jleehurt/Documents/workspace/NeuralNetwork/classes"/>
+	<classpathentry kind="lib" path="/Users/jleehurt/Dev/clojure-read-only/clojure.jar"/>
+	<classpathentry kind="lib" path="lib/jxta/bcprov-jdk14.jar"/>
+	<classpathentry kind="lib" path="lib/jxta/javax.servlet.jar"/>
+	<classpathentry kind="lib" path="lib/jxta/jxta.jar"/>
+	<classpathentry kind="lib" path="lib/jxta/org.mortbay.jetty.jar"/>
+	<classpathentry kind="lib" path="/Users/jleehurt/Dev/clojure-contrib.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

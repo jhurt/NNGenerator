@@ -24,38 +24,41 @@
   '(java.util Enumeration))
 
 (def manager (new NetworkManager NetworkManager$ConfigMode/ADHOC "DiscoveryServer"
-                  (.toURI (new File (new File ".cache") "DiscoveryServer"))))
+  (.toURI (new File (new File ".cache") "DiscoveryServer"))))
+
+(def discoveryService (ref nil))
 
 (def defaultDiscoveryListener (proxy [DiscoveryListener] []
-      (discoveryEvent [event]
-        (let [response (.getReponse event)
-              advertisements (.getAdvertisements response)]
-          (println "server received discovery response from peer  " (.getSource event))
-          (apply println advertisements)))))
+  (discoveryEvent [#^DiscoveryEvent event]
+    (let [response (.getReponse event)
+          advertisements (.getAdvertisements response)]
+      (println "server received discovery response from peer  " (.getSource event) "\n")
+      (apply println advertisements)))))
 
 (defn getPipeAdvertisement []
   (doto (AdvertisementFactory/newAdvertisement (PipeAdvertisement/getAdvertisementType))
-    (.setPipeID (IDFactory/newPipeID PeerGroupID/defaultNetPeerGroupID)
+    (.setPipeID (IDFactory/newPipeID PeerGroupID/defaultNetPeerGroupID))
     (.setType PipeService/UnicastType)
-    (.setName "Discovery Tutorial"))))
+    (.setName "Discovery Tutorial")))
 
 (defn serverLoop [discoveryService]
   (while true
     (let [pipeAdv (getPipeAdvertisement)
-          lifetime 120000 expiration 120000 waitTime 180000]
-      (println "publising pipeAdv")
+          lifetime 30000 expiration 30000 waitTime 31000]
+      (println "server publising pipeAdv:")
       (println (.toString pipeAdv))
       (doto discoveryService
         (.publish pipeAdv lifetime expiration)
-        (.remotePublish pipeAdv expiration))
+        (.remotePublish #^Advertisement pipeAdv)) ;expiration))
       (Thread/sleep waitTime))))
 
 (defn startServer [discoveryService]
+  (println "*************************starting server node*************************\n\n")
   (serverLoop discoveryService))
 
 (defn clientLoop [discoveryService]
   (while true
-    (let [waitTime 60000]
+    (let [waitTime 5000]
       (println "client sleeping for: " waitTime)
       (Thread/sleep waitTime)
       (println "client sending a discovery message")
@@ -75,6 +78,7 @@
         nil))))
 
 (defn startClient [discoveryService]
+  (println "*************************starting client node*************************\n")
   (.getRemoteAdvertisements discoveryService
     ; no specific peer
     nil
@@ -91,15 +95,13 @@
   (clientLoop discoveryService))
 
 (defn -main [s]
-  (let [netPeerGroup (.getNetPeerGroup manager)
-        discoveryService (doto (.getDiscoveryService netPeerGroup) (.addDiscoveryListener defaultDiscoveryListener))]
   (.startNetwork manager)
-  ;(.startService discoveryManager)
-  (ThreadUtils/doInNewThread (startServer discoveryService))
-  (ThreadUtils/doInNewThread (startClient discoveryService))
-  (ThreadUtils/doInNewThread (startClient discoveryService))))
-
-
-    
-    
+  (let [netPeerGroup (.getNetPeerGroup manager)]
+    (dosync
+      (ref-set discoveryService (doto (.getDiscoveryService netPeerGroup)
+        (.addDiscoveryListener defaultDiscoveryListener))))
+    (future (startServer @discoveryService))
+    (future (startClient @discoveryService))
+    (future (startClient @discoveryService))
+    (read-line)))
   
