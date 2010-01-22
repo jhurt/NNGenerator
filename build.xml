@@ -54,13 +54,18 @@
                 <path location="${source.dir}"/>
             </classpath>
             <sysproperty key="clojure.compile.path" value="${bin.dir}"/>
-            <arg value="com.jhurt.Discovery"/>
             <arg value="com.jhurt.Math"/>
             <arg value="com.jhurt.NNGenerator"/>
             <arg value="com.jhurt.Plot3D"/>
             <arg value="com.jhurt.SwingUtils"/>
             <arg value="com.jhurt.ThreadUtils"/>
             <arg value="com.jhurt.UI"/>
+
+            <arg value="com.jhurt.p2p.DiscoveryClient"/>
+            <arg value="com.jhurt.p2p.DiscoveryServer"/>
+            <arg value="com.jhurt.p2p.Jxta"/>
+            <arg value="com.jhurt.p2p.PipeClient"/>
+            <arg value="com.jhurt.p2p.PipeServer"/>
 
             <arg value="com.jhurt.nn.ActivationFunctions"/>
             <arg value="com.jhurt.nn.BackPropagation"/>
@@ -69,7 +74,6 @@
             <arg value="com.jhurt.nn.Input"/>
             <arg value="com.jhurt.nn.PerceptronHaykin"/>
             <arg value="com.jhurt.nn.PerceptronRojas"/>
-
         </java>
     </target>
 
