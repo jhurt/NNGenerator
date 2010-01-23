@@ -56,7 +56,7 @@
 (defn run [netPeerGroup]
   (let [connectPipe (Jxta/getPipeAdvertisement)]
     (println "Attempting to establish a connection to: " (.getPipeID connectPipe))
-    (dosync (ref-set pipe (new JxtaBiDiPipe netPeerGroup   connectPipe 20000 clientPipeMsgListener true)))
+    (dosync (ref-set pipe (new JxtaBiDiPipe netPeerGroup connectPipe 20000 clientPipeMsgListener true)))
     (println "JxtaBiDi pipe created\n\n")
     (heartbeat)))
 

@@ -2,6 +2,7 @@
 <project name="NeuralNetwork" default="build">
     <property file="build.properties" />
 
+    <property name="jxta.cache.dir" location=".nn_cache"/>
     <property name="bin.dir" location="bin"/>
     <property name="test.bin.dir" location="test-bin"/>
     <property name="source.dir" location="src"/>
@@ -40,6 +41,7 @@
     </target>
 
     <target name="clean" description="Remove binary files">
+        <delete dir="${jxta.cache.dir}" />
         <delete file="${nn.jar}"/>
         <delete dir="${bin.dir}"/>
         <delete dir="${test.bin.dir}"/>
@@ -64,8 +66,10 @@
             <arg value="com.jhurt.p2p.DiscoveryClient"/>
             <arg value="com.jhurt.p2p.DiscoveryServer"/>
             <arg value="com.jhurt.p2p.Jxta"/>
+            <arg value="com.jhurt.p2p.Master"/>
             <arg value="com.jhurt.p2p.PipeClient"/>
             <arg value="com.jhurt.p2p.PipeServer"/>
+            <arg value="com.jhurt.p2p.Slave"/>
 
             <arg value="com.jhurt.nn.ActivationFunctions"/>
             <arg value="com.jhurt.nn.BackPropagation"/>
