@@ -30,8 +30,6 @@
 (def manager (new NetworkManager NetworkManager$ConfigMode/ADHOC "Master"
   (.toURI (new File (new File ".nn_cache") "Master"))))
 
-(def discoveryService (ref nil))
-
 (def pipeMsgListener (proxy [PipeMsgListener] []
   (pipeMsgEvent [#^PipeMsgEvent event]
     (let [msg (.getMessage event)
@@ -69,7 +67,7 @@
   (.startNetwork manager)
   (let [netPeerGroup (.getNetPeerGroup manager)
         adv (Jxta/getPipeAdvertisement)
-        serverPipe (doto (new JxtaServerPipe netPeerGroup adv) (.setPipeTimeout 0))]
-    (dosync (ref-set discoveryService (.getDiscoveryService netPeerGroup)))
-    (registrarLoop @discoveryService adv)
+        serverPipe (doto (new JxtaServerPipe netPeerGroup adv) (.setPipeTimeout 0))
+        discoveryService (.getDiscoveryService netPeerGroup)]
+    (registrarLoop discoveryService adv)
     (pipeConnectionLoop serverPipe)))

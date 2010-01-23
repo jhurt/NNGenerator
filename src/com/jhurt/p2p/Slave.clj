@@ -55,7 +55,8 @@
 
 ;attempt to create a bidirectional pipe based on the pipe advertisement
 (defn createPipeFromAdv [#^PipeAdvertisement adv]
-  (dosync (ref-set pipe (new JxtaBiDiPipe @netPeerGroup adv 20000 pipeMsgListener true))))
+  (if (or (nil? @pipe) (not (.isBound @pipe)))
+    (dosync (ref-set pipe (new JxtaBiDiPipe @netPeerGroup adv Integer/MAX_VALUE pipeMsgListener true)))))
 
 ;send a heartbeat message along the pipe
 (defn sendHeartbeat [#^JxtaBiDiPipe pipe]
@@ -66,10 +67,10 @@
 ;loop as long as a pipe is available, sending a heartbeat message every 30 seconds
 (defn heartbeat []
   (ThreadUtils/onThread
-    #(while (not (nil? @pipe))
-    (do
-      (sendHeartbeat @pipe)
-      (Thread/sleep 30000)))))
+    #(while (and (not (nil? @pipe)) (.isBound @pipe))
+      (do
+        (sendHeartbeat @pipe)
+        (Thread/sleep 30000)))))
 
 ;look for a pipe adv from a seq of advertisements
 ;for the first one that is found, a bidirectional pipe
@@ -94,10 +95,11 @@
       (findPipeAdv (enumeration-seq remoteAdvertisements))))))
 
 (defn registrationLoop [#^DiscoveryService discoveryService]
-  (while (nil? @pipe)
-    (println "slave getting remote advertisements\n")
-    (.getRemoteAdvertisements discoveryService nil DiscoveryService/ADV nil nil 10 defaultDiscoveryListener)
-    (Thread/sleep 10000)))
+  (ThreadUtils/onThread
+    #(while true
+      (if (or (nil? @pipe) (not (.isBound @pipe)))
+        (.getRemoteAdvertisements discoveryService nil DiscoveryService/ADV nil nil 10 defaultDiscoveryListener))
+      (Thread/sleep 10000))))
 
 (defn start [discoveryService]
   (println "*************************starting slave node*************************\n")
@@ -107,4 +109,4 @@
   (.startNetwork manager)
   (dosync (ref-set netPeerGroup (.getNetPeerGroup manager)))
   (dosync (ref-set discoveryService (.getDiscoveryService @netPeerGroup)))
-  (future (start @discoveryService)))
+  (start @discoveryService))
