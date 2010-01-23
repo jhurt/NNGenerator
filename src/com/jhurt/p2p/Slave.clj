@@ -11,7 +11,8 @@
 
 (ns com.jhurt.p2p.Slave
   (:gen-class)
-  (:use [com.jhurt.p2p.Jxta :as Jxta]))
+  (:use [com.jhurt.p2p.Jxta :as Jxta])
+  (:use [com.jhurt.ThreadUtils :as ThreadUtils]))
 
 (import
   '(net.jxta.discovery DiscoveryEvent DiscoveryListener DiscoveryService)
@@ -39,25 +40,46 @@
 (def pipeMsgListener (proxy [PipeMsgListener] []
   (pipeMsgEvent [#^PipeMsgEvent event]
     (let [msg (.getMessage event)
-          msgElement (.getMessageElement msg Jxta/MESSAGE_NAMESPACE_NAME Jxta/TEST_ELEMENT_NAME)
+          msgElement (.getMessageElement msg Jxta/MESSAGE_NAMESPACE_NAME nil)
           currentThreadName (.getName (Thread/currentThread))]
       (println "slave thread " currentThreadName " received message: " msg "\nmsg element: " msgElement)))))
 
-(defn printAdv [advs]
-  (apply
-    (fn [adv & x]
-      (println "pipe instance: " (instance? PipeAdvertisement adv))
-      (println "adv class: " (.getName (class adv)))
-      (println "adv type: " (.getAdvType adv))
-      (if (seq? x) (printAdv x) (println (str x))))
-    advs))
+;(defn printAdv [advs]
+;  (apply
+;    (fn [adv & x]
+;      (println "pipe instance: " (instance? PipeAdvertisement adv))
+;      (println "adv class: " (.getName (class adv)))
+;      (println "adv type: " (.getAdvType adv))
+;      (if (seq? x) (printAdv x) (println (str x))))
+;    advs))
 
-(defn getPipe [advs]
+;attempt to create a bidirectional pipe based on the pipe advertisement
+(defn createPipeFromAdv [#^PipeAdvertisement adv]
+  (dosync (ref-set pipe (new JxtaBiDiPipe @netPeerGroup adv 20000 pipeMsgListener true))))
+
+;send a heartbeat message along the pipe
+(defn sendHeartbeat [#^JxtaBiDiPipe pipe]
+  (let [strMsgElement (new StringMessageElement Jxta/HEARTBEAT_ELEMENT_NAME "heartbeat" nil)
+        msg (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement))]
+    (.sendMessage pipe msg)))
+
+;loop as long as a pipe is available, sending a heartbeat message every 30 seconds
+(defn heartbeat []
+  (ThreadUtils/onThread
+    #(while (not (nil? @pipe))
+    (do
+      (sendHeartbeat @pipe)
+      (Thread/sleep 30000)))))
+
+;look for a pipe adv from a seq of advertisements
+;for the first one that is found, a bidirectional pipe
+;is created and a heartbeat is started to the other end
+(defn findPipeAdv [advs]
   (apply
     (fn [adv & x]
       (if (instance? PipeAdvertisement adv)
-        (dosync (ref-set pipe (new JxtaBiDiPipe @netPeerGroup adv 20000 pipeMsgListener true)))
-        (if (seq? x) (getPipe x))))
+        (do (createPipeFromAdv adv) (heartbeat))
+        (if (seq? x) (findPipeAdv x))))
     advs))
 
 ;called whenever Advertisement responses are received from remote peers by the Discovery Service.
@@ -69,20 +91,12 @@
           localAdvertisements
           (.getLocalAdvertisements @discoveryService DiscoveryService/ADV nil nil)]
       (println "slave received discovery response from node: " (.getSource event) "\n")
-      (getPipe (enumeration-seq remoteAdvertisements))))))
+      (findPipeAdv (enumeration-seq remoteAdvertisements))))))
 
 (defn registrationLoop [#^DiscoveryService discoveryService]
   (while (nil? @pipe)
     (println "slave getting remote advertisements\n")
-    ; look for any peer
-    (.getRemoteAdvertisements discoveryService
-      ; no specific peer (propagate)
-      nil
-      DiscoveryService/ADV
-      nil ;"Name"
-      nil ;"pipe"
-      10
-      defaultDiscoveryListener)
+    (.getRemoteAdvertisements discoveryService nil DiscoveryService/ADV nil nil 10 defaultDiscoveryListener)
     (Thread/sleep 10000)))
 
 (defn start [discoveryService]

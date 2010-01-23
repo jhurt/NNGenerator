@@ -14,3 +14,6 @@
 (defn doInNewThread [action]
   "Launch a new thread to do the specified action"
   (.start (Thread. action)))
+
+(defn onThread [runnable]
+  (doto (Thread. #^Runnable runnable) (.start)))
