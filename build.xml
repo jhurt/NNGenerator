@@ -64,12 +64,8 @@
             <arg value="com.jhurt.ThreadUtils"/>
             <arg value="com.jhurt.UI"/>
 
-            <arg value="com.jhurt.p2p.DiscoveryClient"/>
-            <arg value="com.jhurt.p2p.DiscoveryServer"/>
             <arg value="com.jhurt.p2p.Jxta"/>
             <arg value="com.jhurt.p2p.Master"/>
-            <arg value="com.jhurt.p2p.PipeClient"/>
-            <arg value="com.jhurt.p2p.PipeServer"/>
             <arg value="com.jhurt.p2p.Slave"/>
 
             <arg value="com.jhurt.nn.ActivationFunctions"/>
@@ -79,6 +75,11 @@
             <arg value="com.jhurt.nn.Input"/>
             <arg value="com.jhurt.nn.PerceptronHaykin"/>
             <arg value="com.jhurt.nn.PerceptronRojas"/>
+
+            <arg value="com.jhurt.example.DiscoveryClient"/>
+            <arg value="com.jhurt.example.DiscoveryServer"/>
+            <arg value="com.jhurt.example.PipeClient"/>
+            <arg value="com.jhurt.example.PipeServer"/>
         </java>
     </target>
 
