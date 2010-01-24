@@ -56,6 +56,7 @@
                 <path location="${source.dir}"/>
             </classpath>
             <sysproperty key="clojure.compile.path" value="${bin.dir}"/>
+            <arg value="com.jhurt.CollectionsUtils"/>
             <arg value="com.jhurt.Math"/>
             <arg value="com.jhurt.NNGenerator"/>
             <arg value="com.jhurt.Plot3D"/>

@@ -9,42 +9,12 @@
 ;;
 ;;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns com.jhurt.p2p.Jxta)
+(ns com.jhurt.CollectionsUtils)
 
-(import
-  '(net.jxta.discovery DiscoveryEvent DiscoveryListener DiscoveryService)
-  '(net.jxta.document Advertisement AdvertisementFactory)
-  '(net.jxta.peergroup PeerGroup PeerGroupID)
-  '(net.jxta.protocol DiscoveryResponseMsg PipeAdvertisement)
-  '(net.jxta.platform NetworkManager NetworkManager$ConfigMode)
-  '(net.jxta.id IDFactory)
-  '(net.jxta.pipe PipeID PipeService)
-  '(java.io File)
-  '(java.util Enumeration)
-  '(java.net URI))
+(defn bimap [x]
+  "Return a bimap with unique keys and unique values given an input map x"
+  (merge (zipmap (keys x) (vals x)) (zipmap (vals x) (keys x))))
 
-(defstruct InputMessage :pipeId :name :value :time)
-
-(def NETWORK_NAME "NNGeneratorNetwork")
-
-(def MESSAGE_NAMESPACE_NAME "NNGenerator")
-
-(def TEST_ELEMENT_NAME "test")
-(def HEARTBEAT_ELEMENT_NAME "heartbeat")
-(def RESPONSE_ELEMENT_NAME "response")
-
-(def NN_SERVER_PIPE_ID (PipeID/create
-  (URI/create "urn:jxta:uuid-59616261646162614E504720503250338944BCED387C4A2BBD8E9411B78C284104")))
-
-(defn getPipeAdvertisement []
-  (let [adv (AdvertisementFactory/newAdvertisement (PipeAdvertisement/getAdvertisementType))]
-    (doto adv
-      (.setPipeID NN_SERVER_PIPE_ID)
-      (.setType PipeService/UnicastType)
-      (.setName "JxtaBiDiPipe tutorial"))))
-
-(defn getNewPipeAdvertisement [name]
-  (doto (AdvertisementFactory/newAdvertisement (PipeAdvertisement/getAdvertisementType))
-    (.setPipeID (IDFactory/newPipeID PeerGroupID/defaultNetPeerGroupID))
-    (.setType PipeService/UnicastType)
-    (.setName name)))
+(defn inverseMap [x]
+  "Return a map with keys and values reversed given an input map x"
+  (zipmap (vals x) (keys x)))

@@ -15,9 +15,9 @@
         '(java.awt Dimension DisplayMode Graphics
           GraphicsDevice GraphicsEnvironment))
 
-(defn doOnEdt [action]
+(defn doOnEdt [#^Runnable action]
 "Schedule the action on the AWT event dispatch thread and return immediately after scheduling"
-  (SwingUtilities/invokeLater action))
+  (SwingUtilities/invokeLater #^Runnable action))
 
 (defn doOnEdtAndWait [action]
   "Schedule the action on the AWT event dispatch thread and wait for the action to finish"

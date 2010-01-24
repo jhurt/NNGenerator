@@ -11,8 +11,8 @@
 
 (ns com.jhurt.p2p.Master
   (:gen-class)
-  (:use [com.jhurt.p2p.Jxta :as Jxta])
-  (:use [com.jhurt.ThreadUtils :as ThreadUtils]))
+  (:require [com.jhurt.p2p.Jxta :as Jxta])
+  (:require [com.jhurt.ThreadUtils :as ThreadUtils]))
 
 (import
   '(net.jxta.discovery DiscoveryEvent DiscoveryListener DiscoveryService)
@@ -30,24 +30,30 @@
 (def manager (new NetworkManager NetworkManager$ConfigMode/ADHOC "Master"
   (.toURI (new File (new File ".nn_cache") "Master"))))
 
-(def pipeMsgListener (proxy [PipeMsgListener] []
-  (pipeMsgEvent [#^PipeMsgEvent event]
-    (let [msg (.getMessage event)
-          responseMsgElement (.getMessageElement msg Jxta/MESSAGE_NAMESPACE_NAME Jxta/RESPONSE_ELEMENT_NAME)
-          heartbeatElement (.getMessageElement msg Jxta/MESSAGE_NAMESPACE_NAME Jxta/HEARTBEAT_ELEMENT_NAME)
-          currentThreadName (.getName (Thread/currentThread))]
-      (println "server thread " currentThreadName " received message: " msg)
-      (if-not (nil? responseMsgElement) (println "response: " (str responseMsgElement)))
-      (if-not (nil? heartbeatElement) (println "heartbeat from pipe id: " (.getPipeID event)))))))
+(def callback (ref nil))
+
+(def pipeMsgListener
+  (proxy [PipeMsgListener] []
+    (pipeMsgEvent [#^PipeMsgEvent event]
+      (let [source (.getSource event)
+            msg (.getMessage event)
+            elements (iterator-seq (.getMessageElements msg))]
+        (if-not (nil? @callback)
+          (@callback
+            (map
+              (fn [element]
+                (struct Jxta/InputMessage (str (.getPipeID source)) 
+                  (.getElementName element) (str element) (System/currentTimeMillis)))
+              elements)))))))
 
 (defn registrarLoop [#^DiscoveryService discoveryService pipeAdv]
   (ThreadUtils/onThread
     #(while true
       (let [waitTime 10000]
-        (println "master publishing register adv: " (str pipeAdv))
+        (println "master publishing register pipe advertisement")
         (.publish discoveryService pipeAdv)
         (.remotePublish discoveryService pipeAdv)
-        (println "master sleeping for: " waitTime " ms.")
+        (println "master sleeping for: " waitTime " ms.\n")
         (Thread/sleep waitTime)))))
 
 (defn acceptNewPeerConnection [#^JxtaBiDiPipe pipe]
@@ -63,7 +69,8 @@
       (acceptNewPeerConnection (.accept serverPipe))
       (recur))))
 
-(defn -main []
+(defn start [messageInCallback]
+  (dosync (ref-set callback messageInCallback))
   (.startNetwork manager)
   (let [netPeerGroup (.getNetPeerGroup manager)
         adv (Jxta/getPipeAdvertisement)
@@ -71,3 +78,5 @@
         discoveryService (.getDiscoveryService netPeerGroup)]
     (registrarLoop discoveryService adv)
     (pipeConnectionLoop serverPipe)))
+
+(defn -main [] (start nil))

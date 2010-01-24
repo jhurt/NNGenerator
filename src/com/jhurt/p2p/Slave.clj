@@ -11,8 +11,8 @@
 
 (ns com.jhurt.p2p.Slave
   (:gen-class)
-  (:use [com.jhurt.p2p.Jxta :as Jxta])
-  (:use [com.jhurt.ThreadUtils :as ThreadUtils]))
+  (:require [com.jhurt.p2p.Jxta :as Jxta])
+  (:require [com.jhurt.ThreadUtils :as ThreadUtils]))
 
 (import
   '(net.jxta.discovery DiscoveryEvent DiscoveryListener DiscoveryService)
@@ -60,8 +60,10 @@
 
 ;send a heartbeat message along the pipe
 (defn sendHeartbeat [#^JxtaBiDiPipe pipe]
-  (let [strMsgElement (new StringMessageElement Jxta/HEARTBEAT_ELEMENT_NAME "heartbeat" nil)
-        msg (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement))]
+  (let [strMsgElement
+        (new StringMessageElement Jxta/HEARTBEAT_ELEMENT_NAME (str (.getPeerID manager)) nil)
+        msg
+        (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement))]
     (.sendMessage pipe msg)))
 
 ;loop as long as a pipe is available, sending a heartbeat message every 30 seconds
@@ -75,13 +77,13 @@
 ;look for a pipe adv from a seq of advertisements
 ;for the first one that is found, a bidirectional pipe
 ;is created and a heartbeat is started to the other end
-(defn findPipeAdv [advs]
-  (apply
-    (fn [adv & x]
-      (if (instance? PipeAdvertisement adv)
-        (do (createPipeFromAdv adv) (heartbeat))
-        (if (seq? x) (findPipeAdv x))))
-    advs))
+(defn findPipeAdv [advsIn]
+  (loop [advs advsIn]
+    (if (seq? advs)
+      (do
+        (if (instance? PipeAdvertisement (first advs))
+          (do (createPipeFromAdv (first advs)) (heartbeat)))
+        (recur (rest advs))))))
 
 ;called whenever Advertisement responses are received from remote peers by the Discovery Service.
 (def defaultDiscoveryListener (proxy [DiscoveryListener] []
@@ -101,12 +103,9 @@
         (.getRemoteAdvertisements discoveryService nil DiscoveryService/ADV nil nil 10 defaultDiscoveryListener))
       (Thread/sleep 10000))))
 
-(defn start [discoveryService]
-  (println "*************************starting slave node*************************\n")
-  (registrationLoop discoveryService))
-
 (defn -main []
   (.startNetwork manager)
+  (println "*************************starting slave node*************************\n")
   (dosync (ref-set netPeerGroup (.getNetPeerGroup manager)))
   (dosync (ref-set discoveryService (.getDiscoveryService @netPeerGroup)))
-  (start @discoveryService))
+  (registrationLoop @discoveryService))
