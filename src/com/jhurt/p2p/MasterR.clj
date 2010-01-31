@@ -20,12 +20,13 @@
   '(net.jxta.peergroup PeerGroup PeerGroupID)
   '(net.jxta.protocol DiscoveryResponseMsg PipeAdvertisement)
   '(net.jxta.impl.protocol ModuleImplAdv)
-  '(net.jxta.platform NetworkManager NetworkManager$ConfigMode)
+  '(net.jxta.platform NetworkConfigurator NetworkManager NetworkManager$ConfigMode)
   '(net.jxta.id IDFactory)
   '(net.jxta.pipe PipeID PipeService PipeMsgEvent PipeMsgListener)
   '(net.jxta.util JxtaBiDiPipe JxtaServerPipe)
   '(java.io File)
-  '(java.util Enumeration))
+  '(java.util Enumeration)
+  '(java.net URI))
 
 (def serverPipe (ref nil))
 (def registrate (ref false))
@@ -86,9 +87,9 @@
         (Thread/sleep 100)))))
 
 (defn configureMasterNode []
-  (let [seedingURI (URI/create "tcp://70.180.196.124:9701")]
+  (let [seedingURI (URI/create Jxta/RDV_URI)]
     (doto (new NetworkConfigurator)
-      (.setHome (new File (Jxta/JXTA_HOME)))
+      (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
       (.addSeedRelay seedingURI)
       (.addSeedRendezvous seedingURI)

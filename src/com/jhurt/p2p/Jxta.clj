@@ -25,6 +25,8 @@
 
 (defstruct InputMessage :pipeId :name :value :time)
 
+(def RDV_URI "tcp://70.180.196.124:9702")
+
 (def NETWORK_NAME "NNGeneratorNetwork")
 
 (def MESSAGE_NAMESPACE_NAME "NNGenerator")

@@ -1,121 +1,136 @@
 <?xml version="1.0" ?>
 <project name="NeuralNetwork" default="build">
-    <property file="build.properties" />
+	<property file="build.properties" />
 
-    <property name="jxta.cache.dir" location=".nn_cache"/>
-    <property name="bin.dir" location="bin"/>
-    <property name="test.bin.dir" location="test-bin"/>
-    <property name="source.dir" location="src"/>
-    <property name="source.test.dir" location="test/src"/>
-    <property name="nn.jar" location="nn.jar"/>
+	<property name="jxta.cache.dir" location=".nn_cache" />
+	<property name="bin.dir" location="bin" />
+	<property name="test.bin.dir" location="test-bin" />
+	<property name="source.dir" location="src" />
+	<property name="source.test.dir" location="test/src" />
+	<property name="dist.dir" location="dist" />
+	<property name="nn.jar" location="nn.jar" />
 
-    <path id="dependencies">
-        <fileset dir="${jogl.lib.dir}">
-            <include name="**/*.jar"/>
-        </fileset>
-        <fileset dir="${jxta.lib.dir}">
-            <include name="**/*.jar"/>
-        </fileset>
-        <fileset dir="${clojure.lib.dir}">
-            <include name="clojure.jar"/>
-        </fileset>
-    </path>
+	<path id="dependencies">
+		<fileset dir="${jogl.lib.dir}">
+			<include name="**/*.jar" />
+		</fileset>
+		<fileset dir="${jxta.lib.dir}">
+			<include name="**/*.jar" />
+		</fileset>
+		<fileset dir="${clojure.lib.dir}">
+			<include name="clojure.jar" />
+		</fileset>
+	</path>
 
-    <path id="test-dependencies">
-        <fileset dir="${junit.lib.dir}">
-            <include name="**/*.jar"/>
-        </fileset>
-        <fileset dir="${jogl.lib.dir}">
-            <include name="**/*.jar"/>
-        </fileset>
-        <fileset dir="${clojure.lib.dir}">
-            <include name="clojure.jar"/>
-        </fileset>
-        <pathelement path="${bin.dir}" />
-        
-    </path>
+	<path id="test-dependencies">
+		<fileset dir="${junit.lib.dir}">
+			<include name="**/*.jar" />
+		</fileset>
+		<fileset dir="${jogl.lib.dir}">
+			<include name="**/*.jar" />
+		</fileset>
+		<fileset dir="${clojure.lib.dir}">
+			<include name="clojure.jar" />
+		</fileset>
+		<pathelement path="${bin.dir}" />
+	</path>
 
-    <target name="init">
-        <mkdir dir="${bin.dir}"/>
-        <mkdir dir="${test.bin.dir}"/>
-    </target>
+	<target name="init">
+		<mkdir dir="${bin.dir}" />
+		<mkdir dir="${test.bin.dir}" />
+	</target>
 
-    <target name="clean" description="Remove binary files">
-        <delete dir="${jxta.cache.dir}" />
-        <delete file="${nn.jar}"/>
-        <delete dir="${bin.dir}"/>
-        <delete dir="${test.bin.dir}"/>
-    </target>
+	<target name="clean" description="Remove binary files">
+		<delete dir="${jxta.cache.dir}" />
+		<delete file="${nn.jar}" />
+		<delete dir="${bin.dir}" />
+		<delete dir="${test.bin.dir}" />
+		<delete dir="${dist.dir}" />
+	</target>
 
-    <target name="compile" depends="init" description="Compile Clojure source">
-        <java fork="true" failonerror="true" classname="clojure.lang.Compile">
-            <jvmarg value="-Djava.library.path=${jogl.lib.dir}"/>
-            <classpath>
-                <path refid="dependencies"/>
-                <path location="${bin.dir}"/>
-                <path location="${source.dir}"/>
-            </classpath>
-            <sysproperty key="clojure.compile.path" value="${bin.dir}"/>
-            <arg value="contrib.duck-streams"/>
+	<target name="compile" depends="init" description="Compile Clojure source">
+		<java fork="true" failonerror="true" classname="clojure.lang.Compile">
+			<jvmarg value="-Djava.library.path=${jogl.lib.dir}" />
+			<classpath>
+				<path refid="dependencies" />
+				<path location="${bin.dir}" />
+				<path location="${source.dir}" />
+			</classpath>
+			<sysproperty key="clojure.compile.path" value="${bin.dir}" />
 
-            <arg value="com.jhurt.CollectionsUtils"/>
-            <arg value="com.jhurt.Math"/>
-            <arg value="com.jhurt.NNGenerator"/>
-            <arg value="com.jhurt.Plot3D"/>
-            <arg value="com.jhurt.SwingUtils"/>
-            <arg value="com.jhurt.ThreadUtils"/>
-            <arg value="com.jhurt.UI"/>
+			<arg value="com.jhurt.CollectionsUtils" />
+			<arg value="com.jhurt.Math" />
+			<arg value="com.jhurt.NNGenerator" />
+			<arg value="com.jhurt.Plot3D" />
+			<arg value="com.jhurt.SwingUtils" />
+			<arg value="com.jhurt.ThreadUtils" />
+			<arg value="com.jhurt.UI" />
 
-            <arg value="com.jhurt.p2p.Jxta"/>
-            <arg value="com.jhurt.p2p.Master"/>
-            <arg value="com.jhurt.p2p.Slave"/>
+			<arg value="com.jhurt.p2p.Jxta" />
+			<arg value="com.jhurt.p2p.Master" />
+			<arg value="com.jhurt.p2p.Slave" />
+			<arg value="com.jhurt.p2p.MasterR" />
+			<arg value="com.jhurt.p2p.SlaveR" />
+			<arg value="com.jhurt.p2p.Rendezvous" />
 
-            <arg value="com.jhurt.nn.ActivationFunctions"/>
-            <arg value="com.jhurt.nn.BackPropagation"/>
-            <arg value="com.jhurt.nn.Clusterer"/>
-            <arg value="com.jhurt.nn.FirstPrincipalComponent"/>
-            <arg value="com.jhurt.nn.Input"/>
-            <arg value="com.jhurt.nn.PerceptronHaykin"/>
-            <arg value="com.jhurt.nn.PerceptronRojas"/>
+			<arg value="com.jhurt.nn.ActivationFunctions" />
+			<arg value="com.jhurt.nn.BackPropagation" />
+			<arg value="com.jhurt.nn.Clusterer" />
+			<arg value="com.jhurt.nn.FirstPrincipalComponent" />
+			<arg value="com.jhurt.nn.Input" />
+			<arg value="com.jhurt.nn.PerceptronHaykin" />
+			<arg value="com.jhurt.nn.PerceptronRojas" />
 
-            <arg value="com.jhurt.example.DiscoveryClient"/>
-            <arg value="com.jhurt.example.DiscoveryServer"/>
-            <arg value="com.jhurt.example.PipeClient"/>
-            <arg value="com.jhurt.example.PipeServer"/>
-        </java>
-    </target>
+			<arg value="com.jhurt.example.DiscoveryClient" />
+			<arg value="com.jhurt.example.DiscoveryServer" />
+			<arg value="com.jhurt.example.PipeClient" />
+			<arg value="com.jhurt.example.PipeServer" />
+		</java>
+	</target>
 
-    <target name="compile-tests" depends="compile" description="Compile automated tests">
-        <java fork="true" failonerror="true" classname="clojure.lang.Compile">
-            <jvmarg value="-Djava.library.path=${jogl.lib.dir}"/>
-            <classpath>
-                <path refid="test-dependencies"/>
-                <path location="${test.bin.dir}"/>
-                <path location="${source.test.dir}"/>
-                <path location="${source.dir}"/>
-            </classpath>
-            <sysproperty key="clojure.compile.path" value="${test.bin.dir}"/>
-            <arg value="com.jhurt.MathTest"/>
-        </java>
-    </target>
+	<target name="compile-tests" depends="compile" description="Compile automated tests">
+		<java fork="true" failonerror="true" classname="clojure.lang.Compile">
+			<jvmarg value="-Djava.library.path=${jogl.lib.dir}" />
+			<classpath>
+				<path refid="test-dependencies" />
+				<path location="${test.bin.dir}" />
+				<path location="${source.test.dir}" />
+				<path location="${source.dir}" />
+			</classpath>
+			<sysproperty key="clojure.compile.path" value="${test.bin.dir}" />
+			<arg value="com.jhurt.MathTest" />
+		</java>
+	</target>
 
-    <target name="jar">
-        <jar jarfile="${nn.jar}">
-            <fileset dir="${bin.dir}" includes="**/*.class"/>
-        </jar>
-    </target>
+	<target name="jar">
+		<jar jarfile="${nn.jar}">
+			<fileset dir="${bin.dir}" includes="**/*.class" />
+		</jar>
+	</target>
 
-    <target name="build" depends="clean, compile, jar"/>
+	<target name="build" depends="clean, compile, jar" />
 
-    <target name="run-tests" depends="compile-tests">
-        <junit showoutput="yes" printsummary="on" fork="yes" haltonfailure="yes">
-            <classpath>
-                <path refid="test-dependencies"/>
-                <pathelement location="${test.bin.dir}"/>
-            </classpath>
-            <formatter type="plain"/>
-            <test name="com.jhurt.MathTest"/>
-        </junit>
-    </target>
+	<target name="dist" depends="build">
+		<mkdir dir="${dist.dir}" />
+		<copy todir="${dist.dir}">
+			<fileset dir=".">
+				<include name="nn.jar" />
+				<include name="*.sh" />
+			</fileset>
+			<fileset dir="${jxta.lib.dir}" includes="**/*.jar" />
+			<fileset dir="${clojure.lib.dir}" includes="clojure.jar" />
+		</copy>
+	</target>
+
+	<target name="run-tests" depends="compile-tests">
+		<junit showoutput="yes" printsummary="on" fork="yes" haltonfailure="yes">
+			<classpath>
+				<path refid="test-dependencies" />
+				<pathelement location="${test.bin.dir}" />
+			</classpath>
+			<formatter type="plain" />
+			<test name="com.jhurt.MathTest" />
+		</junit>
+	</target>
 
 </project>

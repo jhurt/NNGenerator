@@ -20,7 +20,7 @@
   '(net.jxta.document Advertisement AdvertisementFactory)
   '(net.jxta.peergroup PeerGroup PeerGroupID)
   '(net.jxta.protocol DiscoveryResponseMsg PipeAdvertisement)
-  '(net.jxta.platform NetworkManager NetworkManager$ConfigMode)
+  '(net.jxta.platform NetworkConfigurator NetworkManager NetworkManager$ConfigMode)
   '(net.jxta.id IDFactory)
   '(net.jxta.pipe PipeID PipeMsgEvent PipeMsgListener PipeService)
   '(net.jxta.logging Logging)
@@ -29,8 +29,8 @@
   '(java.net URI)
   '(java.util Enumeration))
 
-(def manager (new NetworkManager NetworkManager$ConfigMode/ADHOC "Slave"
-  (.toURI (new File (new File ".nn_cache") (str "Slave" (rand-int Integer/MAX_VALUE))))))
+(def manager (new NetworkManager NetworkManager$ConfigMode/EDGE "Slave"
+  (.toURI (new File (new File Jxta/JXTA_HOME) (str "Slave" (rand-int Integer/MAX_VALUE))))))
 
 (def netPeerGroup (ref nil))
 
@@ -104,9 +104,9 @@
       (Thread/sleep 10000))))
 
 (defn configureSlaveNode []
-  (let [seedingURI (URI/create "tcp://70.180.196.124:9701")]
+  (let [seedingURI (URI/create Jxta/RDV_URI)]
     (doto (new NetworkConfigurator)
-      (.setHome (new File (Jxta/JXTA_HOME)))
+      (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
       (.addSeedRelay seedingURI)
       (.addSeedRendezvous seedingURI)

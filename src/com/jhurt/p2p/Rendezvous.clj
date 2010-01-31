@@ -27,25 +27,43 @@
   '(net.jxta.rendezvous RendezvousEvent RendezvousListener RendezVousService)
   '(java.io File)
   '(java.util Enumeration)
-  '(java.net.URI))
+  '(java.net URI))
+  
+(def manager (new NetworkManager NetworkManager$ConfigMode/EDGE "Rendezvous"
+  (.toURI (new File (new File Jxta/JXTA_HOME) "Rendezvous"))))
 
 (def defaultRendezvousListener (proxy [RendezvousListener] []
   (rendezvousEvent [#^RendezvousEvent event]
     (println "Rendezvous event: " (str event)))))
 
 (defn configureRdvNode []
-  (let [seedingURI (URI/create "tcp://70.180.196.124:9701")]
+  (let [seedingURI (URI/create Jxta/RDV_URI)]
     (doto (new NetworkConfigurator)
-      (.setHome (new File (Jxta/JXTA_HOME)))
+      (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
       (.addSeedRelay seedingURI)
       (.addSeedRendezvous seedingURI)
       (.addRdvSeedingURI seedingURI)
       (.addRelaySeedingURI seedingURI)
-      (.setMode (+ NetworkConfigurator/RDV_SERVER NetworkConfigurator.RELAY_SERVER))
+      (.setMode (+ NetworkConfigurator/RDV_SERVER NetworkConfigurator/RELAY_SERVER))
       ;    (.setUseOnlyRelaySeeds true)
       ;    (.setUseOnlyRendezvousSeeds true)
       (.setTcpEnabled true)
       (.setTcpIncoming true)
       (.setTcpOutgoing true)
       (.save))))
+      
+ (defn -main []
+ 	(configureRdvNode)
+ 	(.startNetwork manager)
+ 	(let [netPeerGroup (.getNetPeerGroup manager)
+ 				rdvService (.getRendezVousService netPeerGroup)]
+ 				(doto rdvService 
+ 				(.addListener defaultRendezvousListener)
+ 				(.startRendezVous))
+ 				(while true (Thread/sleep 1500))))
+ 	
+ 
+ 
+ 
+ 
