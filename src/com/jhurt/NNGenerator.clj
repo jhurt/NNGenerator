@@ -18,7 +18,7 @@
   (:require [com.jhurt.CollectionsUtils :as CU]))
 
 (import
-  '(javax.swing JButton JFrame JMenu JMenuBar JMenuItem JPanel JScrollPane JSplitPane JTable)
+  '(javax.swing JButton JFrame JMenu JMenuBar JMenuItem JPanel JScrollPane JSplitPane JTable JTextField)
   '(javax.swing.table AbstractTableModel)
   '(java.awt Color BorderLayout FlowLayout)
   '(java.awt.event ActionListener)
@@ -64,9 +64,7 @@
         (.fireTableDataChanged tableModel)
         (recur (rest msgs))))))
 
-(def disconnectMasterListener
-  (proxy [ActionListener] []
-    (actionPerformed [e])))
+(declare disconnectMasterListener)
 
 (def connectMasterListener
   (proxy [ActionListener] []
@@ -78,6 +76,21 @@
           (.setText masterButton "Disconnect Master")
           (.removeActionListener masterButton connectMasterListener)
           (.addActionListener masterButton disconnectMasterListener)
+          (.setEnabled masterButton true))))))))
+
+(def disconnectMasterListener
+   (proxy [ActionListener] []
+    (actionPerformed [e]
+      (.setEnabled masterButton false)
+      (ThreadUtils/onThread (do
+        (Master/stop)
+        (dosync (ref-set peerIdToPipeIdMap (sorted-map)))
+        (dosync (ref-set pipeIdToLastMessageMap (sorted-map)))
+        (.fireTableDataChanged tableModel)
+        (SwingUtils/doOnEdt (do
+          (.setText masterButton "Connect Master")
+          (.removeActionListener masterButton disconnectMasterListener)
+          (.addActionListener masterButton connectMasterListener)
           (.setEnabled masterButton true))))))))
 
 (defn exit []
@@ -108,8 +121,8 @@
   (.setLayout (new BorderLayout))
   (.add buttonPanel BorderLayout/NORTH)))
 
-
 (def nodeTable (doto (new JTable) (.setModel tableModel)))
+
 (def tableScrollPane (new JScrollPane nodeTable))
 
 (def splitPane (doto (new JSplitPane JSplitPane/HORIZONTAL_SPLIT leftPanel tableScrollPane)

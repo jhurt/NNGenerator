@@ -24,6 +24,19 @@
 
 (def trainedWeights (ref nil))
 
+(defn calculateOutput2 [layers input weights]
+  "Get the output of the network for a single input"
+  (let [nodeOutputs (list)]
+    (loop [input input
+           nodeOutputs nodeOutputs]
+      (if (= (count weights) (count nodeOutputs))
+        (butlast (last nodeOutputs))
+        (let [index (count nodeOutputs)
+              activationFn ((nth layers index) :activation-fn)
+              nodeOutput (map activationFn (vectorByMatrix input (nth weights index)))
+              extNodeOutput (concat nodeOutput [1.0])]
+          (recur extNodeOutput (concat nodeOutputs (list extNodeOutput))))))))
+
 (defn calculateOutput [activationFn input weights]
   "Get the output of the network for a single input"
   (let [nodeOutputs (list)]
@@ -52,6 +65,26 @@
           (recur extNodeOutput
             (concat nodeOutputs (list extNodeOutput))
             (concat nodeDerivatives (list nodeDerivative))))))))
+
+(defn calculateNodeValues2 [layers input weights]
+  "Get the output of the activation function and the corresponding
+  derivative of the activation function for each node in the network"
+  (let [nodeOutputs (list) nodeDerivatives (list)]
+    (loop [input input
+           nodeOutputs nodeOutputs
+           nodeDerivatives nodeDerivatives]
+      (if (= (count weights) (count nodeOutputs))
+        {:nodeOutputs nodeOutputs :nodeDerivatives nodeDerivatives}
+        (let [index (count nodeOutputs)
+              activationFn ((nth layers index) :activation-fn)
+              activationFnDerivative ((nth layers index) :derivative-fn)
+              nodeOutput (map activationFn (vectorByMatrix input (nth weights index)))
+              extNodeOutput (concat nodeOutput [1.0])
+              nodeDerivative (map activationFnDerivative extNodeOutput)]
+          (recur extNodeOutput
+            (concat nodeOutputs (list extNodeOutput))
+            (concat nodeDerivatives (list nodeDerivative))))))))
+
 
 (defn calculateNodeErrors [nodeValues weights actualOutput]
   "Get the backpropagated error for each node, the results are stored in
@@ -90,8 +123,8 @@
 
 (defn trainNetwork [inputs outputs weights desiredRms]
   "Train the network with the given inputs/outputs and initial weight set.
-   Training terminates when either the error of the network is less th2an the
-   desiredRMS or when there are no more training samples"
+   Training terminates when either the error of the network is less than the
+   desired RMS error or when there are no more training samples"
   (loop [inputs inputs
          outputs outputs
          weights weights
@@ -107,8 +140,8 @@
             errors (calculateNodeErrors nodeValues weights output)
             ;calculate weight deltas
             deltas (getWeightDeltas extendedInput errors (:nodeOutputs nodeValues))]
-        ;update weights and recurse step
-        (recur (rest inputs) (rest outputs)
+          ;update weights and recurse step
+          (recur (rest inputs) (rest outputs)
           (map matrixSubtract weights deltas) (calculateRmsError (first errors))))
       (dosync (ref-set trainedWeights weights)))))
 
@@ -116,8 +149,50 @@
   ;TODO replace take with repeatable
   (let [inputs (take numCycles (cycle (keys XOR-table)))
         outputs (take numCycles (cycle (vals XOR-table)))
-        weights (list (getRandomWeightVectors 2 3) (getRandomWeightVectors 1 3))]
-    (trainNetwork inputs outputs weights 0.0000001)))
+        weights (list (getRandomWeightVectors 2 3) (getRandomWeightVectors 3 4))]
+    (trainNetwork inputs outputs weights 0.00001)))
+
+(defn getRandomWeightMatrices [hiddenLayers inputArity]
+  (let [weights []]
+    (loop [x inputArity
+           hiddenLayers hiddenLayers
+           weights weights]
+      (if-not (seq hiddenLayers) weights)
+      (let [y ((first hiddenLayers) :number-of-nodes)]
+        (recur y (rest hiddenLayers) (conj weights (getRandomWeightVectors x y)))))))
+
+(defn trainNetwork2 [inputs outputs layers weights]
+  "Train the network with the given inputs/outputs and initial weight set.
+   Training terminates when there are no more training samples"
+  (loop [inputs inputs
+         outputs outputs
+         weights weights
+         rmsError 1.0]
+    (if (and (seq inputs) (seq outputs))
+      (let [input (first inputs)
+            extendedInput (concat input [1.0])
+            output (first outputs)
+            ;feed-forward step
+            nodeValues (calculateNodeValues2 layers extendedInput weights)
+            ;backpropagation step
+            errors (calculateNodeErrors nodeValues weights output)
+            ;calculate weight deltas
+            deltas (getWeightDeltas extendedInput errors (:nodeOutputs nodeValues))]
+        ;update weights and recurse step
+        (recur (rest inputs) (rest outputs)
+          (map matrixSubtract weights deltas) (calculateRmsError (first errors))))
+      (dosync (ref-set trainedWeights weights))))) 
+
+(defn trainXOR2 [maxCycles structure]
+  (let [inputs (structure :inputs)
+        outputs (structure :outputs)
+        layers (structure :layers)
+        inputArity (count (first inputs))
+        weights (getRandomWeightMatrices layers inputArity)]
+    (trainNetwork2 inputs outputs layers weights)))
 
 (defn classifyInput [input]
   (calculateOutput hyperbolicTangent (concat input [1.0]) @trainedWeights))
+
+(defn classifyInput2 [input layers]
+  (calculateOutput2 layers (concat input [1.0]) @trainedWeights))

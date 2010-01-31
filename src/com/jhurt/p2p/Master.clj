@@ -27,10 +27,14 @@
   '(java.io File)
   '(java.util Enumeration))
 
+(def serverPipe (ref nil))
+(def registrate (ref false))
+(def listen (ref false))
+(def callback (ref nil))
+(def pipes (ref ()))
+
 (def manager (new NetworkManager NetworkManager$ConfigMode/ADHOC "Master"
   (.toURI (new File (new File ".nn_cache") "Master"))))
-
-(def callback (ref nil))
 
 (def pipeMsgListener
   (proxy [PipeMsgListener] []
@@ -42,13 +46,13 @@
           (@callback
             (map
               (fn [element]
-                (struct Jxta/InputMessage (str (.getPipeID source)) 
+                (struct Jxta/InputMessage (str (.getPipeID source))
                   (.getElementName element) (str element) (System/currentTimeMillis)))
               elements)))))))
 
 (defn registrarLoop [#^DiscoveryService discoveryService pipeAdv]
   (ThreadUtils/onThread
-    #(while true
+    #(while @registrate
       (let [waitTime 10000]
         (println "master publishing register pipe advertisement")
         (.publish discoveryService pipeAdv)
@@ -57,26 +61,42 @@
         (Thread/sleep waitTime)))))
 
 (defn acceptNewPeerConnection [#^JxtaBiDiPipe pipe]
-  (ThreadUtils/onThread
-    #(do
-      (println "JxtaBidiPipe accepted from " (.getPeerID (.getRemotePeerAdvertisement pipe)) "\n")
-      (.setMessageListener pipe pipeMsgListener))))
+  (if @listen
+    (do
+      (dosync (ref-set pipes (conj @pipes pipe)))
+      (ThreadUtils/onThread
+        #(do
+          (println "JxtaBidiPipe accepted from " (.getPeerID (.getRemotePeerAdvertisement pipe)) "\n")
+          (.setMessageListener pipe pipeMsgListener))))))
 
 (defn pipeConnectionLoop [#^JxtaServerPipe serverPipe]
   (ThreadUtils/onThread
-    #(when-not (.isClosed serverPipe)
-      (println "server waiting for peer connection\n")
-      (acceptNewPeerConnection (.accept serverPipe))
-      (recur))))
+    #(while @listen
+      (if-not (.isClosed serverPipe)
+        (do
+          (println "server waiting for peer connection\n")
+          (acceptNewPeerConnection (.accept serverPipe)))
+        (Thread/sleep 100)))))
 
 (defn start [messageInCallback]
+  (dosync (ref-set pipes ()))
   (dosync (ref-set callback messageInCallback))
   (.startNetwork manager)
   (let [netPeerGroup (.getNetPeerGroup manager)
         adv (Jxta/getPipeAdvertisement)
-        serverPipe (doto (new JxtaServerPipe netPeerGroup adv) (.setPipeTimeout 0))
         discoveryService (.getDiscoveryService netPeerGroup)]
+    (dosync (ref-set serverPipe (doto (new JxtaServerPipe netPeerGroup adv) (.setPipeTimeout 0))))
+    (dosync (ref-set registrate true))
+    (dosync (ref-set listen true))
     (registrarLoop discoveryService adv)
-    (pipeConnectionLoop serverPipe)))
+    (pipeConnectionLoop @serverPipe)))
+
+(defn stop []
+  (println "Stopping master")
+  (dosync (ref-set registrate false))
+  (dosync (ref-set listen false))
+  (.close @serverPipe)
+  (.stopNetwork manager)
+  (doall (map (fn [pipe] (do (.setMessageListener pipe nil) (.close pipe))) @pipes)))
 
 (defn -main [] (start nil))

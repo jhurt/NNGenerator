@@ -20,3 +20,21 @@
 
 (defn vectorMultiplyScalar [v scalar]
   (map * v (cycle [scalar])))
+
+
+
+(import
+  '(java.io StringReader PushbackReader))
+
+(deftype Y [a b])
+
+(defn serialize [x]
+  (binding [*print-dup* false] (pr-str x)))
+
+(defn deserialize [x]
+  (let [r (new PushbackReader (new StringReader x))]
+    (read r)))
+
+(def y (Y "a" "b"))
+
+(deserialize (serialize y)) 

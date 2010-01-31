@@ -30,8 +30,13 @@
 (def MESSAGE_NAMESPACE_NAME "NNGenerator")
 
 (def TEST_ELEMENT_NAME "test")
+
 (def HEARTBEAT_ELEMENT_NAME "heartbeat")
+
+(def TRAIN_ELEMENT_NAME "train")
+
 (def RESPONSE_ELEMENT_NAME "response")
+
 
 (def NN_SERVER_PIPE_ID (PipeID/create
   (URI/create "urn:jxta:uuid-59616261646162614E504720503250338944BCED387C4A2BBD8E9411B78C284104")))
@@ -40,6 +45,7 @@
   (let [adv (AdvertisementFactory/newAdvertisement (PipeAdvertisement/getAdvertisementType))]
     (doto adv
       (.setPipeID NN_SERVER_PIPE_ID)
+      ;(.setPipeID (IDFactory/newPipeID PeerGroupID/defaultNetPeerGroupID))
       (.setType PipeService/UnicastType)
       (.setName "JxtaBiDiPipe tutorial"))))
 

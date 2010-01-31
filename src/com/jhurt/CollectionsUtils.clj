@@ -18,3 +18,6 @@
 (defn inverseMap [x]
   "Return a map with keys and values reversed given an input map x"
   (zipmap (vals x) (keys x)))
+
+(defn structmapToHashmap [s]
+  (zipmap (keys s) (vals s)))
