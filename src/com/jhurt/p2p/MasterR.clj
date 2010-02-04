@@ -117,6 +117,7 @@
     (registrarLoop discoveryService adv)
     (pipeConnectionLoop @serverPipe)))
 
+
 (defn stop []
   (println "Stopping master")
   (dosync (ref-set registrate false))
