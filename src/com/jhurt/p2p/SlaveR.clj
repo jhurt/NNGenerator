@@ -44,15 +44,6 @@
           currentThreadName (.getName (Thread/currentThread))]
       (println "slave thread " currentThreadName " received message: " msg "\nmsg element: " msgElement)))))
 
-;(defn printAdv [advs]
-;  (apply
-;    (fn [adv & x]
-;      (println "pipe instance: " (instance? PipeAdvertisement adv))
-;      (println "adv class: " (.getName (class adv)))
-;      (println "adv type: " (.getAdvType adv))
-;      (if (seq? x) (printAdv x) (println (str x))))
-;    advs))
-
 ;attempt to create a bidirectional pipe based on the pipe advertisement
 (defn createPipeFromAdv [#^PipeAdvertisement adv]
   (if (or (nil? @pipe) (not (.isBound @pipe)))
@@ -124,5 +115,6 @@
   (.startNetwork manager)
   (println "*************************starting slave node*************************\n")
   (dosync (ref-set netPeerGroup (.getNetPeerGroup manager)))
+  (Jxta/waitForRendezvous @netPeerGroup)
   (dosync (ref-set discoveryService (.getDiscoveryService @netPeerGroup)))
   (registrationLoop @discoveryService))

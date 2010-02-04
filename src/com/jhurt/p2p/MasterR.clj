@@ -95,14 +95,12 @@
       (.addSeedRendezvous seedingURI)
       (.addRdvSeedingURI seedingURI)
       (.addRelaySeedingURI seedingURI)
-      ;(.setMode (+ NetworkConfigurator/RDV_SERVER NetworkConfigurator.RELAY_SERVER))
       (.setUseOnlyRelaySeeds true)
       (.setUseOnlyRendezvousSeeds true)
       (.setTcpEnabled true)
       (.setTcpIncoming false)
       (.setTcpOutgoing true)
       (.save))))
-
 
 (defn start [messageInCallback]
   (dosync (ref-set pipes ()))
@@ -112,6 +110,7 @@
   (let [netPeerGroup (.getNetPeerGroup manager)
         adv (Jxta/getPipeAdvertisement)
         discoveryService (.getDiscoveryService netPeerGroup)]
+    (Jxta/waitForRendezvous netPeerGroup)
     (dosync (ref-set serverPipe (doto (new JxtaServerPipe netPeerGroup adv) (.setPipeTimeout 0))))
     (dosync (ref-set registrate true))
     (dosync (ref-set listen true))

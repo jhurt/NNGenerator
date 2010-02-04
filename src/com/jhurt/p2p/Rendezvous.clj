@@ -28,7 +28,7 @@
   '(java.io File)
   '(java.util Enumeration)
   '(java.net URI))
-  
+
 (def manager (new NetworkManager NetworkManager$ConfigMode/EDGE "Rendezvous"
   (.toURI (new File (new File Jxta/JXTA_HOME) "Rendezvous"))))
 
@@ -46,22 +46,22 @@
       (.addRdvSeedingURI seedingURI)
       (.addRelaySeedingURI seedingURI)
       (.setMode (+ NetworkConfigurator/RDV_SERVER NetworkConfigurator/RELAY_SERVER))
-      ;    (.setUseOnlyRelaySeeds true)
-      ;    (.setUseOnlyRendezvousSeeds true)
+      (.setUseOnlyRelaySeeds true)
+      (.setUseOnlyRendezvousSeeds true)
       (.setTcpEnabled true)
       (.setTcpIncoming true)
       (.setTcpOutgoing true)
       (.save))))
-      
- (defn -main []
- 	(configureRdvNode)
- 	(.startNetwork manager)
- 	(let [netPeerGroup (.getNetPeerGroup manager)
- 				rdvService (.getRendezVousService netPeerGroup)]
- 				(doto rdvService 
- 				(.addListener defaultRendezvousListener)
- 				(.startRendezVous))
- 				(while true (Thread/sleep 1500))))
+
+(defn -main []
+  (configureRdvNode)
+  (.startNetwork manager)
+  (let [netPeerGroup (.getNetPeerGroup manager)
+        rdvService (.getRendezVousService netPeerGroup)]
+    (doto rdvService
+      (.addListener defaultRendezvousListener)
+      (.startRendezVous))
+    (while true (Thread/sleep 1500))))
  	
  
  

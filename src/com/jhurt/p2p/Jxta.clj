@@ -25,7 +25,8 @@
 
 (defstruct InputMessage :pipeId :name :value :time)
 
-(def RDV_URI "tcp://70.180.196.124:9702")
+;(def RDV_URI "tcp://70.180.196.124:9701")
+(def RDV_URI "tcp://192.168.0.196:9701")
 
 (def NETWORK_NAME "NNGeneratorNetwork")
 
@@ -57,3 +58,10 @@
     (.setPipeID (IDFactory/newPipeID PeerGroupID/defaultNetPeerGroupID))
     (.setType PipeService/UnicastType)
     (.setName name)))
+
+(defn waitForRendezvous [netPeerGroup]
+  (let [rdvService (.getRendezVousService netPeerGroup)]
+    (while (not (.isConnectedToRendezVous rdvService))
+      (println "waiting for rendezvous connection")
+      (Thread/sleep 5000))))
+
