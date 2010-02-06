@@ -96,7 +96,7 @@
 
 (defn configureSlaveNode []
   (let [seedingURI (URI/create Jxta/RDV_URI)]
-    (doto (new NetworkConfigurator)
+    (doto (.getConfigurator manager)
       (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
       (.addSeedRelay seedingURI)

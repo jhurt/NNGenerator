@@ -54,7 +54,7 @@
           (@callback
             (map
               (fn [element]
-                (struct Jxta/InputMessage (str (.getPipeID source))
+                (struct Jxta/InputMessage (str (.getPipeID (.getPipeAdvertisement source)))
                   (.getElementName element) (str element) (System/currentTimeMillis)))
               elements)))))))
 
@@ -88,7 +88,7 @@
 
 (defn configureMasterNode []
   (let [seedingURI (URI/create Jxta/RDV_URI)]
-    (doto (new NetworkConfigurator)
+    (doto (.getConfigurator manager)
       (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
       (.addSeedRelay seedingURI)
@@ -116,7 +116,6 @@
     (dosync (ref-set listen true))
     (registrarLoop discoveryService adv)
     (pipeConnectionLoop @serverPipe)))
-
 
 (defn stop []
   (println "Stopping master")
