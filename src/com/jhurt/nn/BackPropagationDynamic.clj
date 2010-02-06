@@ -14,17 +14,22 @@
 ;; Loosely based on back propagation algorithm described in
 ;; R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996, pp 167-171
 
-(ns com.jhurt.nn.BackPropagation)
+(ns com.jhurt.nn.BackPropagationDynamic
+  (:require [com.jhurt.nn.ActivationFunctions :as Afns]))
+
 (use 'com.jhurt.Math)
-(use 'com.jhurt.nn.ActivationFunctions)
 (use 'com.jhurt.nn.Input)
 
 ;learning constant defines step length of correction
 (def gamma 0.3)
 
+;stores the result of the weights after the network has been trained
 (def trainedWeights (ref nil))
 
-(defn calculateOutput [activationFn input weights]
+;stores the final error values of the network after it has been trained
+(def finalError (ref nil))
+
+(defn calculateOutput [layers input weights]
   "Get the output of the network for a single input"
   (let [nodeOutputs (list)]
     (loop [input input
@@ -32,11 +37,12 @@
       (if (= (count weights) (count nodeOutputs))
         (butlast (last nodeOutputs))
         (let [index (count nodeOutputs)
+              activationFn ((nth layers index) :activation-fn)
               nodeOutput (map activationFn (vectorByMatrix input (nth weights index)))
               extNodeOutput (concat nodeOutput [1.0])]
           (recur extNodeOutput (concat nodeOutputs (list extNodeOutput))))))))
 
-(defn calculateNodeValues [activationFn activationFnDerivative input weights]
+(defn calculateNodeValues [layers input weights]
   "Get the output of the activation function and the corresponding
   derivative of the activation function for each node in the network"
   (let [nodeOutputs (list) nodeDerivatives (list)]
@@ -46,6 +52,8 @@
       (if (= (count weights) (count nodeOutputs))
         {:nodeOutputs nodeOutputs :nodeDerivatives nodeDerivatives}
         (let [index (count nodeOutputs)
+              activationFn ((nth layers index) :activation-fn)
+              activationFnDerivative ((nth layers index) :derivative-fn)
               nodeOutput (map activationFn (vectorByMatrix input (nth weights index)))
               extNodeOutput (concat nodeOutput [1.0])
               nodeDerivative (map activationFnDerivative extNodeOutput)]
@@ -88,45 +96,81 @@
             (makeMatrix (nth nodeOutputs nodeValueIndex) (nth errors errorIndex)) gamma))]
           (recur (dec errorIndex) (inc nodeValueIndex) (concat deltas (list delta))))))))
 
-(defn trainNetwork [inputs outputs weights desiredRms]
+(defn getRandomWeightMatrices [layers inputArity]
+  (println "building weight matrices")
+  (loop [x inputArity
+         hiddenLayers layers
+         weights (vector)]
+    (if-not (seq hiddenLayers)
+      weights
+      (let [y ((first hiddenLayers) :number-of-nodes)]
+        (recur y (rest hiddenLayers) (conj weights (getRandomWeightVectors x y)))))))
+
+(defn trainNetwork [inputs outputs layers weights]
   "Train the network with the given inputs/outputs and initial weight set.
-   Training terminates when either the error of the network is less than the
-   desired RMS error or when there are no more training samples"
+   Training terminates when there are no more training samples"
+  (println "training network")
   (loop [inputs inputs
          outputs outputs
          weights weights
          rmsError 1.0]
-    (if (and (< desiredRms rmsError) (and (seq inputs) (seq outputs)))
+    (if (and (seq inputs) (seq outputs))
+      ;do one step of training
       (let [input (first inputs)
             extendedInput (concat input [1.0])
             output (first outputs)
-            ;feed-forward step
-            nodeValues
-            (calculateNodeValues hyperbolicTangent hyperbolicTangentDerivative extendedInput weights)
-            ;backpropagation step
+            ;feed-forward
+            nodeValues (calculateNodeValues layers extendedInput weights)
+            ;backpropagation
             errors (calculateNodeErrors nodeValues weights output)
             ;calculate weight deltas
             deltas (getWeightDeltas extendedInput errors (:nodeOutputs nodeValues))]
-          ;update weights and recurse step
-          (recur (rest inputs) (rest outputs)
+        ;update weights and recurse step
+        (recur (rest inputs) (rest outputs)
           (map matrixSubtract weights deltas) (calculateRmsError (first errors))))
-      (dosync (ref-set trainedWeights weights)))))
+      ;completed training, save the weights and the rms error
+      (dosync (ref-set trainedWeights weights) (ref-set finalError rmsError)))))
 
-(defn trainXOR [numCycles]
-  ;TODO replace take with repeatable
-  (let [inputs (take numCycles (cycle (keys XOR-table)))
-        outputs (take numCycles (cycle (vals XOR-table)))
-        weights (list (getRandomWeightVectors 2 3) (getRandomWeightVectors 3 4))]
-    (trainNetwork inputs outputs weights 0.00001)))
+(defn trainXOR [structure]
+  (let [inputs (structure :inputs)
+        outputs (structure :outputs)
+        layers (structure :layers)
+        inputArity (count (first inputs))
+        weights (getRandomWeightMatrices layers inputArity)]
+    (trainNetwork inputs outputs layers weights)
+    (println "RMS Error: " @finalError)))
 
-(defn getRandomWeightMatrices [hiddenLayers inputArity]
-  (let [weights []]
-    (loop [x inputArity
-           hiddenLayers hiddenLayers
-           weights weights]
-      (if-not (seq hiddenLayers) weights)
-      (let [y ((first hiddenLayers) :number-of-nodes)]
-        (recur y (rest hiddenLayers) (conj weights (getRandomWeightVectors x y)))))))
+(def numberOfTrainingDatum 10)
 
-(defn classifyInput [input]
-  (calculateOutput hyperbolicTangent (concat input [1.0]) @trainedWeights))
+; a NN with 2 hidden layers, each layer with 5 nodes, and each hidden layer node uses
+; a hyperbolic tangent activation function to calculate output values
+(def structure1 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
+                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))
+                 :layers
+                 (list {:number-of-nodes 5 :activation-fn Afns/hyperbolicTangent :derivative-fn Afns/hyperbolicTangentDerivative}
+                   {:number-of-nodes 5 :activation-fn Afns/hyperbolicTangent :derivative-fn Afns/hyperbolicTangentDerivative})})
+
+; a NN with 1 hidden layer with 10 nodes, and each hidden layer node uses
+; a hyperbolic tangent activation function to calculate output values
+(def structure2 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
+                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))
+                 :layers
+                 (list {:number-of-nodes 10 :activation-fn Afns/hyperbolicTangent :derivative-fn Afns/hyperbolicTangentDerivative})})
+
+; a NN with 2 hidden layers, each layer with 5 nodes, and each hidden layer node uses
+; a logistic activation function to calculate output values
+(def structure3 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
+                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))
+                 :layers
+                 (list {:number-of-nodes 5 :activation-fn Afns/logistic :derivative-fn Afns/logisticDerivative}
+                   {:number-of-nodes 5 :activation-fn Afns/logistic :derivative-fn Afns/logisticDerivative})})
+
+; a NN with 1 hidden layer with 10 nodes, and each hidden layer node uses
+; a logistic activation function to calculate output values
+(def structure4 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
+                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))
+                 :layers
+                 (list {:number-of-nodes 10 :activation-fn Afns/logistic :derivative-fn Afns/logisticDerivative})})
+
+(defn classifyInput [input layers]
+  (calculateOutput layers (concat input [1.0]) @trainedWeights))

@@ -76,16 +76,17 @@
 
 			<arg value="com.jhurt.nn.ActivationFunctions" />
 			<arg value="com.jhurt.nn.BackPropagation" />
+            <arg value="com.jhurt.nn.BackPropagationDynamic" />
 			<arg value="com.jhurt.nn.Clusterer" />
 			<arg value="com.jhurt.nn.FirstPrincipalComponent" />
 			<arg value="com.jhurt.nn.Input" />
 			<arg value="com.jhurt.nn.PerceptronHaykin" />
 			<arg value="com.jhurt.nn.PerceptronRojas" />
 
-			<arg value="com.jhurt.example.DiscoveryClient" />
-			<arg value="com.jhurt.example.DiscoveryServer" />
-			<arg value="com.jhurt.example.PipeClient" />
-			<arg value="com.jhurt.example.PipeServer" />
+			<!--<arg value="com.jhurt.example.DiscoveryClient" />-->
+			<!--<arg value="com.jhurt.example.DiscoveryServer" />-->
+			<!--<arg value="com.jhurt.example.PipeClient" />-->
+			<!--<arg value="com.jhurt.example.PipeServer" />-->
 		</java>
 	</target>
 
