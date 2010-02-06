@@ -11,7 +11,7 @@
 
 (ns com.jhurt.NNGenerator
   (:gen-class)
-  (:require [com.jhurt.p2p.Master :as Master])
+  (:require [com.jhurt.p2p.MasterR :as Master])
   (:require [com.jhurt.p2p.Jxta :as Jxta])
   (:require [com.jhurt.SwingUtils :as SwingUtils])
   (:require [com.jhurt.ThreadUtils :as ThreadUtils])
@@ -70,13 +70,15 @@
   (proxy [ActionListener] []
     (actionPerformed [e]
       (.setEnabled masterButton false)
-      (ThreadUtils/onThread (do
-        (Master/start messageInCallback)
-        (SwingUtils/doOnEdt (do
-          (.setText masterButton "Disconnect Master")
-          (.removeActionListener masterButton connectMasterListener)
-          (.addActionListener masterButton disconnectMasterListener)
-          (.setEnabled masterButton true))))))))
+      (ThreadUtils/onThread 
+      	#(do
+        	(Master/start messageInCallback)
+        	(SwingUtils/doOnEdt 
+        		(do
+		          (.setText masterButton "Disconnect Master")
+		          (.removeActionListener masterButton connectMasterListener)
+		          (.addActionListener masterButton disconnectMasterListener)
+		          (.setEnabled masterButton true))))))))
 
 (def disconnectMasterListener
    (proxy [ActionListener] []

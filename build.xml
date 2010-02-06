@@ -7,6 +7,7 @@
 	<property name="test.bin.dir" location="test-bin" />
 	<property name="source.dir" location="src" />
 	<property name="source.test.dir" location="test/src" />
+	<property name="scripts.dir" location="scripts" />
 	<property name="dist.dir" location="dist" />
 	<property name="nn.jar" location="nn.jar" />
 
@@ -115,7 +116,12 @@
 		<copy todir="${dist.dir}">
 			<fileset dir=".">
 				<include name="nn.jar" />
-				<include name="*.sh" />
+			</fileset>
+			<fileset dir="${scripts.dir}/linux">
+				<include name="**/*" />
+			</fileset>
+			<fileset dir="${scripts.dir}/windows">
+				<include name="**/*" />
 			</fileset>
 			<fileset dir="${jxta.lib.dir}" includes="**/*.jar" />
 			<fileset dir="${clojure.lib.dir}" includes="clojure.jar" />
