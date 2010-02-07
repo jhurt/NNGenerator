@@ -26,7 +26,7 @@
 (defstruct InputMessage :pipeId :name :value :time)
 
 ;(def RDV_URI "tcp://70.180.196.124:9701")
-(def RDV_URI "tcp://192.168.0.191:9701")
+(def RDV_URI "tcp://192.168.0.196:9701")
 ;(def RDV_URI "tcp://192.168.0.190:9701")
 
 (def NETWORK_NAME "NNGeneratorNetwork")
@@ -37,7 +37,7 @@
 
 (def HEARTBEAT_ELEMENT_NAME "heartbeat")
 
-(def TRAIN_ELEMENT_NAME "train")
+(def TRAIN_XOR_ELEMENT_NAME "train-xor")
 
 (def RESPONSE_ELEMENT_NAME "response")
 

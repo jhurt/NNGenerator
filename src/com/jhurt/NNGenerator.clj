@@ -11,11 +11,14 @@
 
 (ns com.jhurt.NNGenerator
   (:gen-class)
+  (:use [com.jhurt.Serialization])
   (:require [com.jhurt.p2p.MasterR :as Master])
   (:require [com.jhurt.p2p.Jxta :as Jxta])
   (:require [com.jhurt.SwingUtils :as SwingUtils])
   (:require [com.jhurt.ThreadUtils :as ThreadUtils])
-  (:require [com.jhurt.CollectionsUtils :as CU]))
+  (:require [com.jhurt.CollectionsUtils :as CU])
+  (:require [com.jhurt.ga.GA :as GA])
+  (:require [com.jhurt.nn.ActivationFunctions :as Afns]))
 
 (import
   '(javax.swing JButton JFrame JLabel JMenu JMenuBar JMenuItem JPanel JScrollPane JSplitPane JTable JTextField)
@@ -29,11 +32,21 @@
 
 (def masterButton (new JButton "Connect Master"))
 
-(def inputMaxLayers (new JTextField 10))
+(def inputMaxLayers (doto (new JTextField 10) (.setText "2")))
+(defn getMaxLayers []
+  (Integer/parseInt (.getText inputMaxLayers)))
 
-(def inputMaxNodesPerLayer (new JTextField 10))
+(def inputMaxNodesPerLayer (doto (new JTextField 10) (.setText "5")))
+(defn getMaxNodesPerLayer []
+  (Integer/parseInt (.getText inputMaxNodesPerLayer)))
 
-(def inputMaxTrainingCycles (new JTextField 10))
+(def inputMaxTrainingCycles (doto (new JTextField 10) (.setText "10000")))
+(defn getMaxTrainingCycles []
+  (Integer/parseInt (.getText inputMaxTrainingCycles)))
+
+(def inputNumberOfGenerations (doto (new JTextField 10) (.setText "50")))
+(defn getNumberOfGenerations []
+  (Integer/parseInt (.getText inputNumberOfGenerations)))
 
 (def tableModel (proxy [AbstractTableModel] []
   (getColumnName [index]
@@ -54,6 +67,12 @@
           (== 2 columnIndex) (msg :value)
           (== 3 columnIndex) (str (new Date (msg :time)))
           (== 4 columnIndex) pipeId))))))
+
+(defn getLivePeers
+  "return a list of peers to which the master is currently connected"
+  []
+  (let [peerIds (keys @peerIdToPipeIdMap)]
+    (filter Master/isConnectedToPeer peerIds)))
 
 (defn messageInCallback [messages]
   (loop [msgs messages]
@@ -91,16 +110,17 @@
   (proxy [ActionListener] []
     (actionPerformed [e]
       (.setEnabled masterButton false)
-      (ThreadUtils/onThread (do
-        (Master/stop)
-        (dosync (ref-set peerIdToPipeIdMap (sorted-map)))
-        (dosync (ref-set pipeIdToLastMessageMap (sorted-map)))
-        (.fireTableDataChanged tableModel)
-        (SwingUtils/doOnEdt (do
-          (.setText masterButton "Connect Master")
-          (.removeActionListener masterButton disconnectMasterListener)
-          (.addActionListener masterButton connectMasterListener)
-          (.setEnabled masterButton true))))))))
+      (ThreadUtils/onThread
+        #(do
+          (Master/stop)
+          (dosync (ref-set peerIdToPipeIdMap (sorted-map)))
+          (dosync (ref-set pipeIdToLastMessageMap (sorted-map)))
+          (.fireTableDataChanged tableModel)
+          (SwingUtils/doOnEdt (do
+            (.setText masterButton "Connect Master")
+            (.removeActionListener masterButton disconnectMasterListener)
+            (.addActionListener masterButton connectMasterListener)
+            (.setEnabled masterButton true))))))))
 
 (defn exit []
   ;TODO: cleanup
@@ -112,11 +132,20 @@
 
 (def menuItemGenerateXOR (doto (new JMenuItem "Generate XOR NN")
   (.addActionListener (proxy [ActionListener] []
-    (actionPerformed [e] (exit))))))
+    (actionPerformed [e]
+      (ThreadUtils/onThread
+        #(doall
+          (map
+            (fn [peerId] (let [layers
+                               (GA/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) Afns/logistic Afns/logisticDerivative)
+                               msg {:layers layers :training-cycles (getMaxTrainingCycles)}]
+              (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
+            (getLivePeers)))))))))
 
 (def menuItemGenerateFacialRecognition (doto (new JMenuItem "Generate Facial Recoginition NN")
   (.addActionListener (proxy [ActionListener] []
-    (actionPerformed [e] (exit))))))
+    (actionPerformed [e] ;TODO
+      )))))
 
 (def fileMenu (doto (new JMenu "File")
   (.add menuItemGenerateXOR)
@@ -140,9 +169,9 @@
     (set! (.gridwidth constraints) 2)
     (.add topLeftPanel (doto masterButton (.addActionListener connectMasterListener)) constraints)
 
+    (set! (.gridy constraints) 1)
     (set! (.gridwidth constraints) 1)
     (set! (.insets constraints) (new Insets 5 0 5 0))
-    (set! (.gridy constraints) 1)
     (.add topLeftPanel (new JLabel "Maximum # of Hidden Layers:") constraints)
     (set! (.gridx constraints) 1)
     (.add topLeftPanel inputMaxLayers constraints)
@@ -157,7 +186,13 @@
     (set! (.gridy constraints) 3)
     (.add topLeftPanel (new JLabel "Maximum # of Training Cycles:") constraints)
     (set! (.gridx constraints) 1)
-    (.add topLeftPanel inputMaxTrainingCycles constraints)))
+    (.add topLeftPanel inputMaxTrainingCycles constraints)
+
+    (set! (.gridx constraints) 0)
+    (set! (.gridy constraints) 4)
+    (.add topLeftPanel (new JLabel "# of Generations:") constraints)
+    (set! (.gridx constraints) 1)
+    (.add topLeftPanel inputNumberOfGenerations constraints)))
 
 (def leftPanel (doto (new JPanel)
   (.setBackground Color/WHITE)

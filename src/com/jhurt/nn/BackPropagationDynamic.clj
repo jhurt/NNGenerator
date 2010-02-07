@@ -26,8 +26,9 @@
 ;stores the final error values of the network after it has been trained
 (def finalError (ref nil))
 
-(defn calculateOutput [layers input weights]
+(defn calculateOutput
   "Get the output of the network for a single input"
+  [layers input weights]
   (let [nodeOutputs (list)]
     (loop [input input
            nodeOutputs nodeOutputs]
@@ -39,9 +40,10 @@
               extNodeOutput (concat nodeOutput [1.0])]
           (recur extNodeOutput (concat nodeOutputs (list extNodeOutput))))))))
 
-(defn calculateNodeValues [layers input weights]
+(defn calculateNodeValues
   "Get the output of the activation function and the corresponding
   derivative of the activation function for each node in the network"
+  [layers input weights]
   (let [nodeOutputs (list) nodeDerivatives (list)]
     (loop [input input
            nodeOutputs nodeOutputs
@@ -58,10 +60,11 @@
             (concat nodeOutputs (list extNodeOutput))
             (concat nodeDerivatives (list nodeDerivative))))))))
 
-(defn calculateNodeErrors [nodeValues weights actualOutput]
+(defn calculateNodeErrors
   "Get the backpropagated error for each node, the results are stored in
   reverse order of the network, the first vector is the backprogated error
   for the output layer"
+  [nodeValues weights actualOutput]
   (let [errors (list)]
     (loop [errors errors]
       (if (= (count errors) (count weights))
@@ -74,13 +77,15 @@
               error (map * (nth (:nodeDerivatives nodeValues) index) difference)]
           (recur (concat errors (list error))))))))
 
-(defn calculateRmsError [outputLayerError]
+(defn calculateRmsError
   "Get the root mean squared error for the output layer of the network"
+  [outputLayerError]
   (reduce + (map (fn [x] (* 0.5 (* x x))) outputLayerError)))
 
-(defn getWeightDeltas [extendedInput errors nodeOutputs]
+(defn getWeightDeltas
   "Get the weight deltas for each layer based on
   the given backpropogated errors"
+  [extendedInput errors nodeOutputs]
   (let [deltas (list)]
     (loop [errorIndex (dec (count nodeOutputs))
            nodeValueIndex -1
@@ -94,10 +99,10 @@
           (recur (dec errorIndex) (inc nodeValueIndex) (concat deltas (list delta))))))))
 
 
-(defn trainNetwork [inputs outputs layers weights]
+(defn trainNetwork
   "Train the network with the given inputs/outputs and initial weight set.
    Training terminates when there are no more training samples"
-  (println "training network")
+  [inputs outputs layers weights]
   (loop [inputs inputs
          outputs outputs
          weights weights

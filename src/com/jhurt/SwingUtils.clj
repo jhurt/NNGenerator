@@ -15,18 +15,21 @@
         '(java.awt Dimension DisplayMode Graphics
           GraphicsDevice GraphicsEnvironment))
 
-(defn doOnEdt [#^Runnable action]
+(defn doOnEdt
 "Schedule the action on the AWT event dispatch thread and return immediately after scheduling"
+  [#^Runnable action]
   (SwingUtilities/invokeLater #^Runnable action))
 
-(defn doOnEdtAndWait [action]
+(defn doOnEdtAndWait
   "Schedule the action on the AWT event dispatch thread and wait for the action to finish"
+  [action]
   (if (SwingUtilities/isEventDispatchThread) (action) (SwingUtilities/invokeAndWait action)))
 
-(defn setSizeBasedOnResolution [component]
+(defn setSizeBasedOnResolution
   "Set the size of the Swing component based on the resolution of the
   primary display. Defaults to 800x600 if there is a problem
   grabbing the display"
+  [component]
 	(let [graphicsEnv (GraphicsEnvironment/getLocalGraphicsEnvironment)
 				graphicsDevices (. graphicsEnv getScreenDevices)]
 			(if (> (alength graphicsDevices) 0)

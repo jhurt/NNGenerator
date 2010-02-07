@@ -12,8 +12,9 @@
 ;Common NN related functions
 (ns com.jhurt.nn.Common)
 
-(defn getRandomWeightVectors[size number]
+(defn getRandomWeightVectors
   "build vector of size 'number' of vectors of length 'size' populated with random values b/w 0 and 1"
+  [size number]
   (take number (repeatedly (fn [] (take size (repeatedly rand))))))
 
 (defn getRandomWeightMatrices [layers inputArity]

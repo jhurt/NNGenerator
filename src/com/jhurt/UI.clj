@@ -15,7 +15,8 @@
   (:require [com.jhurt.nn.Input :as Input])
   (:require [com.jhurt.nn.Common :as Common])
   (:use [com.jhurt.SwingUtils :only (doOnEdt)])
-  (:use [com.jhurt.Plot3D :as Plot3D]))
+  (:use [com.jhurt.Plot3D :as Plot3D])
+  (:use [com.jhurt.ThreadUtils]))
 
 (import
   '(javax.swing JFrame JPanel JButton JFileChooser GrayFilter)
@@ -25,10 +26,6 @@
   '(java.io File)
   '(javax.imageio ImageIO)
   '(java.awt Graphics))
-
-(defn doInNewThread [action]
-  "Launch a new thread to do the specified action"
-  (.start (Thread. action)))
 
 (defn convertInputsToPoints [inputs]
   (let [input (first inputs)

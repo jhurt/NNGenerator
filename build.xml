@@ -59,7 +59,6 @@
 			</classpath>
 			<sysproperty key="clojure.compile.path" value="${bin.dir}" />
 
-
 			<arg value="com.jhurt.p2p.Jxta" />
 			<arg value="com.jhurt.p2p.MasterR" />
 			<arg value="com.jhurt.p2p.SlaveR" />
@@ -77,6 +76,8 @@
 
             <arg value="com.jhurt.nn.trainer.FacialRecognition" />
             <arg value="com.jhurt.nn.trainer.XOR" />
+
+            <arg value="com.jhurt.ga.GA" />
 
             <arg value="com.jhurt.CollectionsUtils" />
             <arg value="com.jhurt.Math" />

@@ -16,6 +16,7 @@
 
 (import
   '(net.jxta.discovery DiscoveryEvent DiscoveryListener DiscoveryService)
+  '(net.jxta.endpoint Message MessageElement StringMessageElement)
   '(net.jxta.document Advertisement AdvertisementFactory)
   '(net.jxta.peergroup PeerGroup PeerGroupID)
   '(net.jxta.protocol DiscoveryResponseMsg PipeAdvertisement)
@@ -32,7 +33,7 @@
 (def registrate (ref false))
 (def listen (ref false))
 (def callback (ref nil))
-(def pipes (ref ()))
+(def peerIdsToPipes (ref {}))
 
 (defn defaultMessageInCallback [messages]
   (loop [msgs messages]
@@ -58,6 +59,21 @@
                   (.getElementName element) (str element) (System/currentTimeMillis)))
               elements)))))))
 
+(defn isConnectedToPeer
+  "return true if we are connected to the peer specified by peer id"
+  [peerId]
+  (let [pipe (@peerIdsToPipes peerId)]
+    (and (not (nil? pipe)) (.isBound pipe))))
+
+(defn sendMessageToPeer [peerId elementName msg]
+  (let [pipe (@peerIdsToPipes peerId)]
+    (if-not (nil? pipe)
+      (do
+        (println "sending message: " msg " to " peerId)
+        (let [strMsgElement (new StringMessageElement elementName msg nil)]
+          (.sendMessage pipe
+            (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement))))))))
+
 (defn registrarLoop [#^DiscoveryService discoveryService pipeAdv]
   (ThreadUtils/onThread
     #(while @registrate
@@ -69,13 +85,15 @@
         (Thread/sleep waitTime)))))
 
 (defn acceptNewPeerConnection [#^JxtaBiDiPipe pipe]
-  (if @listen
-    (do
-      (dosync (ref-set pipes (conj @pipes pipe)))
-      (ThreadUtils/onThread
-        #(do
-          (println "JxtaBidiPipe accepted from " (.getPeerID (.getRemotePeerAdvertisement pipe)) "\n")
-          (.setMessageListener pipe pipeMsgListener))))))
+  (let [peerId (.getPeerID (.getRemotePeerAdvertisement pipe))]
+    (if @listen
+      (do
+        ;keep a map of input PipeId's to JxtaBidiPipes
+        (dosync (ref-set peerIdsToPipes (conj @peerIdsToPipes {(str peerId) pipe})))
+        (ThreadUtils/onThread
+          #(do
+            (println "JxtaBidiPipe accepted from " peerId "\n")
+            (.setMessageListener pipe pipeMsgListener)))))))
 
 (defn pipeConnectionLoop [#^JxtaServerPipe serverPipe]
   (ThreadUtils/onThread
@@ -103,7 +121,6 @@
       (.save))))
 
 (defn start [messageInCallback]
-  (dosync (ref-set pipes ()))
   (dosync (ref-set callback messageInCallback))
   (configureMasterNode)
   (.startNetwork manager)
@@ -123,6 +140,6 @@
   (dosync (ref-set listen false))
   (.close @serverPipe)
   (.stopNetwork manager)
-  (doall (map (fn [pipe] (do (.setMessageListener pipe nil) (.close pipe))) @pipes)))
+  (doall (map (fn [pipe] (do (.setMessageListener pipe nil) (.close pipe))) (vals @peerIdsToPipes))))
 
 (defn -main [] (start defaultMessageInCallback))

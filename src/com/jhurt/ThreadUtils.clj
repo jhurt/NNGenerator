@@ -11,8 +11,9 @@
 
 (ns com.jhurt.ThreadUtils)
 
-(defn doInNewThread [action]
+(defn doInNewThread
   "Launch a new thread to do the specified action"
+  [action]
   (.start (Thread. action)))
 
 (defn onThread [runnable]

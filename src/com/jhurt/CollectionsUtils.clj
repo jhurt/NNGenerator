@@ -11,12 +11,14 @@
 
 (ns com.jhurt.CollectionsUtils)
 
-(defn bimap [x]
+(defn bimap
   "Return a bimap with unique keys and unique values given an input map x"
+  [x]
   (merge (zipmap (keys x) (vals x)) (zipmap (vals x) (keys x))))
 
-(defn inverseMap [x]
+(defn inverseMap
   "Return a map with keys and values reversed given an input map x"
+  [x]
   (zipmap (vals x) (keys x)))
 
 (defn structmapToHashmap [s]

@@ -13,6 +13,9 @@
 
 (def randomNumbers (repeatedly rand))
 
+(defn randomPositive [x]
+  (int (Math/ceil (* x (rand 1)))))
+
 ;; Matrix Functions
 
 (defn transposeMatrix2 [matrix]
@@ -22,11 +25,12 @@
 (defn transposeMatrix [matrix]
   (apply map (fn [& column] column) matrix))
 
-(defn matrixMultiply [matrixA matrixB]
+(defn matrixMultiply
   "Map a function to each row of matrixA that applies a map
   of the addition of row-column multiplications to each column of matrixB.
   The body of this function is lazy and will not be executed
   if the return value is not read anywhere"
+  [matrixA matrixB]
   (map
     (fn [row] (apply map (fn [& column] (apply + (map * row column))) matrixB))
     matrixA))
@@ -63,8 +67,9 @@
 (defn arrayPlusAnother [x y]
   (map + x y))
 
-(defn normalizeVector [x]
+(defn normalizeVector
   "normalize a vector by converting it to a unit vector"
+  [x]
   (let [length (Math/sqrt (reduce + (map * x x)))]
     (map / x (repeat (count x) length))))
 
@@ -79,17 +84,20 @@
   (concat (take (dec (count v)) v) (list x) (drop (count v) v)))
 
 ;; Matrix & Vector Functions
-(defn vectorByMatrix [v m]
+(defn vectorByMatrix
   "multiply vector v by matrix m"
+  [v m]
   (map (fn [row] (apply + (map * row v))) (transposeMatrix m)))
 
-(defn matrixByVector [m v]
+(defn matrixByVector
   "multiply matrix m by vector v"
+  [m v]
   (map (fn [row] (reduce + (map * row v))) m))
 
-(defn makeMatrix [vectorA vectorB]
+(defn makeMatrix
   "return a new matrix out of vectorA and vectorB whose (i,j)th element is the value
   of vectorA[i] * vectorB[j]"
+  [vectorA vectorB]
   (map (fn [x] (map (fn [y] (* x y)) vectorB)) vectorA))
 
 ;; Functions shared b/w Matrix and Vector
