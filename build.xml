@@ -59,17 +59,8 @@
 			</classpath>
 			<sysproperty key="clojure.compile.path" value="${bin.dir}" />
 
-			<arg value="com.jhurt.CollectionsUtils" />
-			<arg value="com.jhurt.Math" />
-			<arg value="com.jhurt.NNGenerator" />
-			<arg value="com.jhurt.Plot3D" />
-			<arg value="com.jhurt.SwingUtils" />
-			<arg value="com.jhurt.ThreadUtils" />
-			<arg value="com.jhurt.UI" />
 
 			<arg value="com.jhurt.p2p.Jxta" />
-			<arg value="com.jhurt.p2p.Master" />
-			<arg value="com.jhurt.p2p.Slave" />
 			<arg value="com.jhurt.p2p.MasterR" />
 			<arg value="com.jhurt.p2p.SlaveR" />
 			<arg value="com.jhurt.p2p.Rendezvous" />
@@ -77,16 +68,25 @@
 			<arg value="com.jhurt.nn.ActivationFunctions" />
 			<arg value="com.jhurt.nn.BackPropagation" />
             <arg value="com.jhurt.nn.BackPropagationDynamic" />
+            <arg value="com.jhurt.nn.Common" />
 			<arg value="com.jhurt.nn.Clusterer" />
 			<arg value="com.jhurt.nn.FirstPrincipalComponent" />
 			<arg value="com.jhurt.nn.Input" />
 			<arg value="com.jhurt.nn.PerceptronHaykin" />
 			<arg value="com.jhurt.nn.PerceptronRojas" />
 
-			<!--<arg value="com.jhurt.example.DiscoveryClient" />-->
-			<!--<arg value="com.jhurt.example.DiscoveryServer" />-->
-			<!--<arg value="com.jhurt.example.PipeClient" />-->
-			<!--<arg value="com.jhurt.example.PipeServer" />-->
+            <arg value="com.jhurt.nn.trainer.FacialRecognition" />
+            <arg value="com.jhurt.nn.trainer.XOR" />
+
+            <arg value="com.jhurt.CollectionsUtils" />
+            <arg value="com.jhurt.Math" />
+            <arg value="com.jhurt.NNGenerator" />
+            <arg value="com.jhurt.Plot3D" />
+            <arg value="com.jhurt.SwingUtils" />
+            <arg value="com.jhurt.ThreadUtils" />
+            <arg value="com.jhurt.UI" />
+
+
 		</java>
 	</target>
 

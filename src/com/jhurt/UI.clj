@@ -13,6 +13,7 @@
   (:require [com.jhurt.nn.PerceptronRojas :as PR])
   (:require [com.jhurt.nn.Clusterer :as Clusterer])
   (:require [com.jhurt.nn.Input :as Input])
+  (:require [com.jhurt.nn.Common :as Common])
   (:use [com.jhurt.SwingUtils :only (doOnEdt)])
   (:use [com.jhurt.Plot3D :as Plot3D]))
 
@@ -60,7 +61,7 @@
 
 (defn trainClusterer []
   (let [inputs (Input/getRandomInputVectors 3 100 50)
-        weights (Clusterer/trainWeights (Input/getRandomWeightVectors 3 4) inputs)]
+        weights (Clusterer/trainWeights (Common/getRandomWeightVectors 3 4) inputs)]
     (Plot3D/displayNewPlot
       (convertInputsToPoints inputs)
       (convertWeightVectorsToLines weights)

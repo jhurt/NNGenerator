@@ -9,23 +9,6 @@
 ;;
 ;;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-(ns com.jhurt.nn.Input
-  (:require [com.jhurt.Math]))
-
-;; Binary Logic Input/Output
-
-(def infiniteInputCollection (cycle [[[1.0 1.0 1.0]] [[1.0 -1.0 1.0]] [[1.0 1.0 -1.0]] [[1.0 -1.0 -1.0]]]))
-(def infiniteAndOutputCollection (cycle [1.0 -1.0 -1.0 -1.0]))
-
-(def AND-table {[0 0 1] 0
-                [0 1 1] 0
-                [1 0 1] 0
-                [1 1 1] 1})
-
-(defn getRandomInput [size]
-  (map (fn [x] (* 50.0 x)) (take size (repeatedly rand))))
-
-(defn getRandomInputVectors[x y upperBound]
-  "build vector of size y of vectors of length x populated with random values b/w 0 and upperBound"
-  (take y (repeatedly (fn [] (take x (repeatedly (fn [] (* upperBound (rand)))))))))
-
+(ns com.jhurt.nn.trainer.FacialRecognition
+  (:require [com.jhurt.nn.ActivationFunctions :as Afns])
+  (:require [com.jhurt.nn.BackPropagationDynamic :as BP]))

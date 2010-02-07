@@ -9,13 +9,10 @@
 ;;
 ;;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-;; an implementation of a back propogation algorithm for NN's with support for variable hidden layers,
-;; multidimensional input and output training sets, variable activation functions
-;; Loosely based on back propagation algorithm described in
-;; R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996, pp 167-171
+;; based on BackPropagation.clj, these functions support training
+;; a NN given an arbitrary network structure
 
-(ns com.jhurt.nn.BackPropagationDynamic
-  (:require [com.jhurt.nn.ActivationFunctions :as Afns]))
+(ns com.jhurt.nn.BackPropagationDynamic)
 
 (use 'com.jhurt.Math)
 (use 'com.jhurt.nn.Input)
@@ -96,15 +93,6 @@
             (makeMatrix (nth nodeOutputs nodeValueIndex) (nth errors errorIndex)) gamma))]
           (recur (dec errorIndex) (inc nodeValueIndex) (concat deltas (list delta))))))))
 
-(defn getRandomWeightMatrices [layers inputArity]
-  (println "building weight matrices")
-  (loop [x inputArity
-         hiddenLayers layers
-         weights (vector)]
-    (if-not (seq hiddenLayers)
-      weights
-      (let [y ((first hiddenLayers) :number-of-nodes)]
-        (recur y (rest hiddenLayers) (conj weights (getRandomWeightVectors x y)))))))
 
 (defn trainNetwork [inputs outputs layers weights]
   "Train the network with the given inputs/outputs and initial weight set.
@@ -131,46 +119,6 @@
       ;completed training, save the weights and the rms error
       (dosync (ref-set trainedWeights weights) (ref-set finalError rmsError)))))
 
-(defn trainXOR [structure]
-  (let [inputs (structure :inputs)
-        outputs (structure :outputs)
-        layers (structure :layers)
-        inputArity (count (first inputs))
-        weights (getRandomWeightMatrices layers inputArity)]
-    (trainNetwork inputs outputs layers weights)
-    (println "RMS Error: " @finalError)))
-
-(def numberOfTrainingDatum 10)
-
-; a NN with 2 hidden layers, each layer with 5 nodes, and each hidden layer node uses
-; a hyperbolic tangent activation function to calculate output values
-(def structure1 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
-                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))
-                 :layers
-                 (list {:number-of-nodes 5 :activation-fn Afns/hyperbolicTangent :derivative-fn Afns/hyperbolicTangentDerivative}
-                   {:number-of-nodes 5 :activation-fn Afns/hyperbolicTangent :derivative-fn Afns/hyperbolicTangentDerivative})})
-
-; a NN with 1 hidden layer with 10 nodes, and each hidden layer node uses
-; a hyperbolic tangent activation function to calculate output values
-(def structure2 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
-                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))
-                 :layers
-                 (list {:number-of-nodes 10 :activation-fn Afns/hyperbolicTangent :derivative-fn Afns/hyperbolicTangentDerivative})})
-
-; a NN with 2 hidden layers, each layer with 5 nodes, and each hidden layer node uses
-; a logistic activation function to calculate output values
-(def structure3 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
-                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))
-                 :layers
-                 (list {:number-of-nodes 5 :activation-fn Afns/logistic :derivative-fn Afns/logisticDerivative}
-                   {:number-of-nodes 5 :activation-fn Afns/logistic :derivative-fn Afns/logisticDerivative})})
-
-; a NN with 1 hidden layer with 10 nodes, and each hidden layer node uses
-; a logistic activation function to calculate output values
-(def structure4 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
-                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))
-                 :layers
-                 (list {:number-of-nodes 10 :activation-fn Afns/logistic :derivative-fn Afns/logisticDerivative})})
-
-(defn classifyInput [input layers]
-  (calculateOutput layers (concat input [1.0]) @trainedWeights))
+(defn classifyInput [input structure]
+  (let [layers (structure :layers)]
+    (calculateOutput layers (concat input [1.0]) @trainedWeights)))

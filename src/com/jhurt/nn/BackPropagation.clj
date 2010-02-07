@@ -18,6 +18,8 @@
 (use 'com.jhurt.Math)
 (use 'com.jhurt.nn.ActivationFunctions)
 (use 'com.jhurt.nn.Input)
+(use 'com.jhurt.nn.Common)
+
 
 ;learning constant defines step length of correction
 (def gamma 0.3)
@@ -112,21 +114,17 @@
           (map matrixSubtract weights deltas) (calculateRmsError (first errors))))
       (dosync (ref-set trainedWeights weights)))))
 
+(def XOR-table {[-1 -1] [-1]
+                [-1 1] [1]
+                [1 -1] [1]
+                [1 1] [-1]})
+
 (defn trainXOR [numCycles]
   ;TODO replace take with repeatable
   (let [inputs (take numCycles (cycle (keys XOR-table)))
         outputs (take numCycles (cycle (vals XOR-table)))
         weights (list (getRandomWeightVectors 2 3) (getRandomWeightVectors 3 4))]
     (trainNetwork inputs outputs weights 0.00001)))
-
-(defn getRandomWeightMatrices [hiddenLayers inputArity]
-  (let [weights []]
-    (loop [x inputArity
-           hiddenLayers hiddenLayers
-           weights weights]
-      (if-not (seq hiddenLayers) weights)
-      (let [y ((first hiddenLayers) :number-of-nodes)]
-        (recur y (rest hiddenLayers) (conj weights (getRandomWeightVectors x y)))))))
 
 (defn classifyInput [input]
   (calculateOutput hyperbolicTangent (concat input [1.0]) @trainedWeights))

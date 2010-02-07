@@ -18,9 +18,9 @@
   (:require [com.jhurt.CollectionsUtils :as CU]))
 
 (import
-  '(javax.swing JButton JFrame JMenu JMenuBar JMenuItem JPanel JScrollPane JSplitPane JTable JTextField)
+  '(javax.swing JButton JFrame JLabel JMenu JMenuBar JMenuItem JPanel JScrollPane JSplitPane JTable JTextField)
   '(javax.swing.table AbstractTableModel)
-  '(java.awt Color BorderLayout FlowLayout)
+  '(java.awt Color BorderLayout GridBagConstraints GridBagLayout Insets)
   '(java.awt.event ActionListener)
   '(java.util Date))
 
@@ -28,6 +28,12 @@
 (def pipeIdToLastMessageMap (ref (sorted-map)))
 
 (def masterButton (new JButton "Connect Master"))
+
+(def inputMaxLayers (new JTextField 10))
+
+(def inputMaxNodesPerLayer (new JTextField 10))
+
+(def inputMaxTrainingCycles (new JTextField 10))
 
 (def tableModel (proxy [AbstractTableModel] []
   (getColumnName [index]
@@ -64,24 +70,25 @@
         (.fireTableDataChanged tableModel)
         (recur (rest msgs))))))
 
+;forward declaration
 (declare disconnectMasterListener)
 
 (def connectMasterListener
   (proxy [ActionListener] []
     (actionPerformed [e]
       (.setEnabled masterButton false)
-      (ThreadUtils/onThread 
-      	#(do
-        	(Master/start messageInCallback)
-        	(SwingUtils/doOnEdt 
-        		(do
-		          (.setText masterButton "Disconnect Master")
-		          (.removeActionListener masterButton connectMasterListener)
-		          (.addActionListener masterButton disconnectMasterListener)
-		          (.setEnabled masterButton true))))))))
+      (ThreadUtils/onThread
+        #(do
+          (Master/start messageInCallback)
+          (SwingUtils/doOnEdt
+            (do
+              (.setText masterButton "Disconnect Master")
+              (.removeActionListener masterButton connectMasterListener)
+              (.addActionListener masterButton disconnectMasterListener)
+              (.setEnabled masterButton true))))))))
 
 (def disconnectMasterListener
-   (proxy [ActionListener] []
+  (proxy [ActionListener] []
     (actionPerformed [e]
       (.setEnabled masterButton false)
       (ThreadUtils/onThread (do
@@ -103,25 +110,59 @@
   (.addActionListener (proxy [ActionListener] []
     (actionPerformed [e] (exit))))))
 
-(def trainMenuItem (new JMenuItem "Train"))
+(def menuItemGenerateXOR (doto (new JMenuItem "Generate XOR NN")
+  (.addActionListener (proxy [ActionListener] []
+    (actionPerformed [e] (exit))))))
+
+(def menuItemGenerateFacialRecognition (doto (new JMenuItem "Generate Facial Recoginition NN")
+  (.addActionListener (proxy [ActionListener] []
+    (actionPerformed [e] (exit))))))
 
 (def fileMenu (doto (new JMenu "File")
-  (.add trainMenuItem)
+  (.add menuItemGenerateXOR)
+  (.add menuItemGenerateFacialRecognition)
   (.addSeparator)
   (.add exitMenuItem)))
 
 (def menuBar (doto (new JMenuBar)
   (.add fileMenu)))
 
-(def buttonPanel (doto (new JPanel)
-  (.setBackground Color/WHITE)
-  (.setLayout (new FlowLayout FlowLayout/CENTER 10 5))
-  (.add (doto masterButton (.addActionListener connectMasterListener)))))
+(def topLeftPanel (doto (new JPanel)
+  (.setBackground Color/WHITE)))
+
+(defn layoutTopLeftPanel []
+  (let [constraints (new GridBagConstraints)]
+    (.setLayout topLeftPanel (new GridBagLayout))
+    (set! (.fill constraints) (. GridBagConstraints VERTICAL))
+    (set! (.gridx constraints) 0)
+    (set! (.gridy constraints) 0)
+    (set! (.insets constraints) (new Insets 10 0 40 0))
+    (set! (.gridwidth constraints) 2)
+    (.add topLeftPanel (doto masterButton (.addActionListener connectMasterListener)) constraints)
+
+    (set! (.gridwidth constraints) 1)
+    (set! (.insets constraints) (new Insets 5 0 5 0))
+    (set! (.gridy constraints) 1)
+    (.add topLeftPanel (new JLabel "Maximum # of Hidden Layers:") constraints)
+    (set! (.gridx constraints) 1)
+    (.add topLeftPanel inputMaxLayers constraints)
+
+    (set! (.gridx constraints) 0)
+    (set! (.gridy constraints) 2)
+    (.add topLeftPanel (new JLabel "Maximum # of Nodes Per Layer:") constraints)
+    (set! (.gridx constraints) 1)
+    (.add topLeftPanel inputMaxNodesPerLayer constraints)
+
+    (set! (.gridx constraints) 0)
+    (set! (.gridy constraints) 3)
+    (.add topLeftPanel (new JLabel "Maximum # of Training Cycles:") constraints)
+    (set! (.gridx constraints) 1)
+    (.add topLeftPanel inputMaxTrainingCycles constraints)))
 
 (def leftPanel (doto (new JPanel)
   (.setBackground Color/WHITE)
   (.setLayout (new BorderLayout))
-  (.add buttonPanel BorderLayout/NORTH)))
+  (.add topLeftPanel BorderLayout/NORTH)))
 
 (def nodeTable (doto (new JTable) (.setModel tableModel)))
 
@@ -135,6 +176,7 @@
 (defn -main []
   (let [frame (new JFrame "Neural Network UI")]
     (SwingUtils/setSizeBasedOnResolution frame)
+    (layoutTopLeftPanel)
     (.. frame (getContentPane) (add splitPane))
     (doto frame
       (.setDefaultCloseOperation (JFrame/EXIT_ON_CLOSE))
