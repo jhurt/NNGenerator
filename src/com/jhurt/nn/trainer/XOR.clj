@@ -32,7 +32,7 @@
   (let [structure {:inputs (take numberOfDatum (cycle (keys XOR-table)))
                    :outputs (take numberOfDatum (cycle (vals XOR-table)))
                    :layers layers}]
-    (trainStructure [structure])))
+    (trainStructure structure)))
 
 (defn getResult [] { :weights @BP/trainedWeights :error @BP/finalError })
 

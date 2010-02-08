@@ -46,7 +46,6 @@
 (defmethod handleIncomingMessage Jxta/TRAIN_XOR_ELEMENT_NAME [msgElem]
   (println "slave received train xor msg: " (str msgElem))
   (let [msg (deserialize (str msgElem))]
-    (println "msg class: " (class msg))
     (XOR/train (msg :layers) (msg :training-cycles))))
 
 (def pipeMsgListener (proxy [PipeMsgListener] []
