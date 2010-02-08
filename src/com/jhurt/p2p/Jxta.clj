@@ -39,6 +39,8 @@
 
 (def TRAIN_XOR_ELEMENT_NAME "train-xor")
 
+(def FINISH_TRAIN_XOR_ELEMENT_NAME "finish-train-xor")
+
 (def RESPONSE_ELEMENT_NAME "response")
 
 (def JXTA_HOME ".nn_cache")

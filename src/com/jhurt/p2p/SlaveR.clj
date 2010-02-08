@@ -39,6 +39,18 @@
 (def pipe (ref nil))
 (def discoveryService (ref nil))
 
+(defn sendMessageToMaster [elementName msg]
+    (if-not (nil? @pipe)
+      (do
+        (println "sending message: " msg " to master")
+        (let [strMsgElement (new StringMessageElement elementName msg nil)]
+          (.sendMessage @pipe
+            (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement)))))))
+
+(defn trainNetworkCallback [weights error generation layers]
+  (let [msg {:weights weights :error error :generation generation :layers layers}]
+    (sendMessageToMaster Jxta/FINISH_TRAIN_XOR_ELEMENT_NAME (serialize msg))))
+
 ;a multimethod for handling incoming messages
 ;the dispatch function is the name of the message element
 (defmulti handleIncomingMessage (fn [msgElem] (.getElementName msgElem)))
@@ -46,7 +58,7 @@
 (defmethod handleIncomingMessage Jxta/TRAIN_XOR_ELEMENT_NAME [msgElem]
   (println "slave received train xor msg: " (str msgElem))
   (let [msg (deserialize (str msgElem))]
-    (XOR/train (msg :layers) (msg :training-cycles))))
+    (XOR/train (msg :layers) (msg :training-cycles) (msg :generation) trainNetworkCallback)))
 
 (def pipeMsgListener (proxy [PipeMsgListener] []
   (pipeMsgEvent [#^PipeMsgEvent event]

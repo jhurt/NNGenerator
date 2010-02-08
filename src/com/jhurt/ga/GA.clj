@@ -23,7 +23,28 @@
                         :activation-fn activationFn
                         :derivative-fn derivFn}))))))
 
+(defn sortTrainResults [trainResults]
+  (sort-by :error < trainResults))
 
+(defn getBestResults [num trainResults]
+  (take num (sortTrainResults trainResults)))
+
+(defn crossover [layersNN1 layersNN2]
+  (map
+    (fn [ithLayerNN1 ithLayerNN2]
+      (let [activationFn (if (> 0.5 (rand 1)) (ithLayerNN1 :activation-fn) (ithLayerNN2 :activation-fn))
+            derivFn (if (> 0.5 (rand 1)) (ithLayerNN1 :derivative-fn) (ithLayerNN2 :derivative-fn))]
+      {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
+       :activation-fn activationFn :derivative-fn derivFn}))
+    layersNN1 layersNN2))
+
+(defn breed [trainResults newPopulationSize]
+  (let [parents (getBestResults (int (* 0.5 newPopulationSize)) trainResults)]
+    (println "parents size: " (count parents))
+    (loop [p parents children ()]
+      (if (or (not (seq p)) (< (count p) 2))
+        children
+        (recur (rest (rest p)) (conj children (crossover ((nth p 0) :layers) ((nth p 1) :layers))))))))
 
 ;(def structure1 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
 ;                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))

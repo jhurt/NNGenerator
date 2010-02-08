@@ -19,20 +19,21 @@
                 [1 -1] [1]
                 [1 1] [-1]})
 
-(defn trainStructure [structure]
+(defn trainStructure [structure generation callback]
   (let [inputs (structure :inputs)
         outputs (structure :outputs)
         layers (structure :layers)
         inputArity (count (first inputs))
         weights (getRandomWeightMatrices layers inputArity)]
     (BP/trainNetwork inputs outputs layers weights)
-    (println "RMS Error: " @BP/finalError)))
+    (println "RMS Error: " @BP/finalError)
+    (callback @BP/trainedWeights @BP/finalError generation layers)))
 
-(defn train [layers numberOfDatum]
+(defn train [layers numberOfDatum generation callback]
   (let [structure {:inputs (take numberOfDatum (cycle (keys XOR-table)))
                    :outputs (take numberOfDatum (cycle (vals XOR-table)))
                    :layers layers}]
-    (trainStructure structure)))
+    (trainStructure structure generation callback)))
 
 (defn getResult [] { :weights @BP/trainedWeights :error @BP/finalError })
 

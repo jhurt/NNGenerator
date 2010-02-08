@@ -74,19 +74,46 @@
   (let [peerIds (keys @peerIdToPipeIdMap)]
     (filter Master/isConnectedToPeer peerIds)))
 
+(def trainingResults (ref ()))
+
+(defn breed [results]
+  (let [children (GA/breed results (count (getLivePeers)))
+        generation ((first results) :generation)]
+    (println "children: " children)
+    (doall
+      (map
+          (fn [peerId child]
+            (let [msg {:layers (child :layers)
+                  :training-cycles (getMaxTrainingCycles)
+                  :generation (inc generation)}]
+                  (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
+        (getLivePeers) children))))
+
+;a multimethod for handling incoming messages
+;the dispatch function is the name of the message element
+(defmulti handleIncomingMessage (fn [msg] (msg :name)))
+
+(defmethod handleIncomingMessage Jxta/HEARTBEAT_ELEMENT_NAME [msg]
+  ;keep a map of pipe id to peer id's
+  (dosync (ref-set peerIdToPipeIdMap (conj @peerIdToPipeIdMap
+    (assoc (sorted-map) (msg :value) (msg :pipeId)))))
+  ;keep a map of pipe id to last incoming heartbeat
+  (dosync (ref-set pipeIdToLastMessageMap (conj @pipeIdToLastMessageMap
+    (assoc (sorted-map) (msg :pipeId) msg)))))
+
+(defmethod handleIncomingMessage Jxta/FINISH_TRAIN_XOR_ELEMENT_NAME [msg]
+  (println "master received train xor complete msg: " (msg :value))
+  (let [trainResult (deserialize (msg :value))]
+    (dosync (ref-set trainingResults (conj @trainingResults trainResult)))
+    (if (= (count (getLivePeers)) (count @trainingResults))
+      (breed @trainingResults))))
+
 ;fired whenever a slave sends the master a message
 (defn messageInCallback [messages]
   (loop [msgs messages]
     (if (seq msgs)
       (do
-        (let [msg (first msgs)]
-          ;keep a map of pipe id to peer id's
-          (if (= (msg :name) Jxta/HEARTBEAT_ELEMENT_NAME)
-            (dosync (ref-set peerIdToPipeIdMap (conj @peerIdToPipeIdMap
-              (assoc (sorted-map) (msg :value) (msg :pipeId))))))
-          ;keep a map of pipe id to last incoming message
-          (dosync (ref-set pipeIdToLastMessageMap (conj @pipeIdToLastMessageMap
-            (assoc (sorted-map) (msg :pipeId) msg)))))
+        (handleIncomingMessage (first msgs))
         (.fireTableDataChanged tableModel)
         (recur (rest msgs))))))
 
@@ -138,8 +165,8 @@
     (actionPerformed [e]
       (ThreadUtils/onThread
         #(doall (map
-            (fn [peerId] (let [layers (GA/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) Afns/logistic Afns/logisticDerivative)
-                               msg {:layers layers :training-cycles (getMaxTrainingCycles)}]
+          (fn [peerId] (let [layers (GA/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) Afns/logistic Afns/logisticDerivative)
+                             msg {:layers layers :training-cycles (getMaxTrainingCycles) :generation 1}]
             (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
           (getLivePeers)))))))))
 
