@@ -77,17 +77,16 @@
 (def trainingResults (ref ()))
 
 (defn breed [results]
-  (let [children (GA/breed results (count (getLivePeers)))
+  (let [peers (getLivePeers)
+        children (GA/breed results (count peers))
         generation ((first results) :generation)]
-    (println "children: " children)
-    (doall
-      (map
-          (fn [peerId child]
-            (let [msg {:layers (child :layers)
-                  :training-cycles (getMaxTrainingCycles)
-                  :generation (inc generation)}]
-                  (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
-        (getLivePeers) children))))
+    (map
+      (fn [peerId child]
+        (let [msg {:layers (child :layers)
+                   :training-cycles (getMaxTrainingCycles)
+                   :generation (inc generation)}]
+          (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
+      peers children)))
 
 ;a multimethod for handling incoming messages
 ;the dispatch function is the name of the message element
