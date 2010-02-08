@@ -74,6 +74,7 @@
   (let [peerIds (keys @peerIdToPipeIdMap)]
     (filter Master/isConnectedToPeer peerIds)))
 
+;fired whenever a slave sends the master a message
 (defn messageInCallback [messages]
   (loop [msgs messages]
     (if (seq msgs)
@@ -92,6 +93,7 @@
 ;forward declaration
 (declare disconnectMasterListener)
 
+;fired when the connect button is clicked, connects the master to the network
 (def connectMasterListener
   (proxy [ActionListener] []
     (actionPerformed [e]
@@ -106,6 +108,7 @@
               (.addActionListener masterButton disconnectMasterListener)
               (.setEnabled masterButton true))))))))
 
+;fired when the disconnect button is clicked, disconnects the master from the network
 (def disconnectMasterListener
   (proxy [ActionListener] []
     (actionPerformed [e]
@@ -134,13 +137,11 @@
   (.addActionListener (proxy [ActionListener] []
     (actionPerformed [e]
       (ThreadUtils/onThread
-        #(doall
-          (map
-            (fn [peerId] (let [layers
-                               (GA/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) Afns/logistic Afns/logisticDerivative)
+        #(doall (map
+            (fn [peerId] (let [layers (GA/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) Afns/logistic Afns/logisticDerivative)
                                msg {:layers layers :training-cycles (getMaxTrainingCycles)}]
-              (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
-            (getLivePeers)))))))))
+            (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
+          (getLivePeers)))))))))
 
 (def menuItemGenerateFacialRecognition (doto (new JMenuItem "Generate Facial Recoginition NN")
   (.addActionListener (proxy [ActionListener] []

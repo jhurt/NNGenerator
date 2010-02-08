@@ -12,7 +12,9 @@
 (ns com.jhurt.p2p.SlaveR
   (:gen-class)
   (:require [com.jhurt.p2p.Jxta :as Jxta])
-  (:require [com.jhurt.ThreadUtils :as ThreadUtils]))
+  (:require [com.jhurt.ThreadUtils :as ThreadUtils])
+  (:require [com.jhurt.nn.trainer.XOR :as XOR])
+  (:use [com.jhurt.Serialization]))
 
 (import
   '(net.jxta.discovery DiscoveryEvent DiscoveryListener DiscoveryService)
@@ -37,12 +39,21 @@
 (def pipe (ref nil))
 (def discoveryService (ref nil))
 
+;a multimethod for handling incoming messages
+;the dispatch function is the name of the message element
+(defmulti handleIncomingMessage (fn [msgElem] (.getElementName msgElem)))
+
+(defmethod handleIncomingMessage Jxta/TRAIN_XOR_ELEMENT_NAME [msgElem]
+  (println "slave received train xor msg: " (str msgElem))
+  (let [msg (deserialize (str msgElem))]
+    (println "msg class: " (class msg))
+    (XOR/train (msg :layers) (msg :training-cycles))))
+
 (def pipeMsgListener (proxy [PipeMsgListener] []
   (pipeMsgEvent [#^PipeMsgEvent event]
     (let [msg (.getMessage event)
-          msgElement (.getMessageElement msg Jxta/MESSAGE_NAMESPACE_NAME nil)
-          currentThreadName (.getName (Thread/currentThread))]
-      (println "slave thread " currentThreadName " received message: " msg "\nmsg element: " msgElement)))))
+          msgElems (iterator-seq (.getMessageElements msg))]
+      (doall (map handleIncomingMessage msgElems))))))
 
 ;attempt to create a bidirectional pipe based on the pipe advertisement
 (defn createPipeFromAdv [#^PipeAdvertisement adv]

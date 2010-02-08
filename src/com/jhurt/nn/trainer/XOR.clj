@@ -19,7 +19,7 @@
                 [1 -1] [1]
                 [1 1] [-1]})
 
-(defn trainXOR [structure]
+(defn trainStructure [structure]
   (let [inputs (structure :inputs)
         outputs (structure :outputs)
         layers (structure :layers)
@@ -28,11 +28,11 @@
     (BP/trainNetwork inputs outputs layers weights)
     (println "RMS Error: " @BP/finalError)))
 
-(defn trainXOR [layers numberOfDatum]
+(defn train [layers numberOfDatum]
   (let [structure {:inputs (take numberOfDatum (cycle (keys XOR-table)))
                    :outputs (take numberOfDatum (cycle (vals XOR-table)))
                    :layers layers}]
-    (trainXOR [structure])))
+    (trainStructure [structure])))
 
 (defn getResult [] { :weights @BP/trainedWeights :error @BP/finalError })
 
