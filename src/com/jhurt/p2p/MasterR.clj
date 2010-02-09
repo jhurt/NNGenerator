@@ -77,7 +77,7 @@
 (defn registrarLoop [#^DiscoveryService discoveryService pipeAdv]
   (ThreadUtils/onThread
     #(while @registrate
-      (let [waitTime 10000]
+      (let [waitTime 60000]
         (println "master publishing register pipe advertisement")
         (.publish discoveryService pipeAdv)
         (.remotePublish discoveryService pipeAdv)

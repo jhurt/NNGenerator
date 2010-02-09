@@ -92,8 +92,9 @@
 ;is created and a heartbeat is started to the other end
 (defn findPipeAdv [advsIn]
   (loop [advs advsIn]
-    (if (seq? advs)
+    (if (and (seq? advs) (not (nil? (first advs))))
       (do
+        (println "advertisement type: " (.getAdvType (first advs)))
         (if (instance? PipeAdvertisement (first advs))
           (do (createPipeFromAdv (first advs)) (heartbeat)))
         (recur (rest advs))))))
@@ -113,8 +114,8 @@
   (ThreadUtils/onThread
     #(while true
       (if (or (nil? @pipe) (not (.isBound @pipe)))
-        (.getRemoteAdvertisements discoveryService nil DiscoveryService/ADV nil nil 10 defaultDiscoveryListener))
-      (Thread/sleep 10000))))
+        (.getRemoteAdvertisements discoveryService nil DiscoveryService/ADV nil nil 10000 defaultDiscoveryListener))
+      (Thread/sleep 30000))))
 
 (defn configureSlaveNode []
   (let [seedingURI (URI/create Jxta/RDV_URI)]

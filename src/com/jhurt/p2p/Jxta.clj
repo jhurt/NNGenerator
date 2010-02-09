@@ -25,8 +25,8 @@
 
 (defstruct InputMessage :pipeId :name :value :time)
 
-;(def RDV_URI "tcp://70.180.196.124:9701")
-(def RDV_URI "tcp://192.168.0.196:9701")
+(def RDV_URI "tcp://70.180.196.124:9701")
+;(def RDV_URI "tcp://192.168.0.196:9701")
 ;(def RDV_URI "tcp://192.168.0.190:9701")
 
 (def NETWORK_NAME "NNGeneratorNetwork")
@@ -45,6 +45,8 @@
 
 (def JXTA_HOME ".nn_cache")
 
+(def MASTER_PIPE_ADV_NAME "NNGeneratorJxtaPipeAdv")
+
 (def NN_SERVER_PIPE_ID (PipeID/create
   (URI/create "urn:jxta:uuid-59616261646162614E504720503250338944BCED387C4A2BBD8E9411B78C284104")))
 
@@ -54,7 +56,7 @@
       (.setPipeID NN_SERVER_PIPE_ID)
       ;(.setPipeID (IDFactory/newPipeID PeerGroupID/defaultNetPeerGroupID))
       (.setType PipeService/UnicastType)
-      (.setName "JxtaBiDiPipe tutorial"))))
+      (.setName MASTER_PIPE_ADV_NAME))))
 
 (defn getNewPipeAdvertisement [name]
   (doto (AdvertisementFactory/newAdvertisement (PipeAdvertisement/getAdvertisementType))

@@ -29,22 +29,39 @@
 (defn getBestResults [num trainResults]
   (take num (sortTrainResults trainResults)))
 
+(defn mutate [layersNN1]
+  (map
+    (fn [ithLayerNN1]
+      (let [activationFn (ithLayerNN1 :activation-fn)
+            derivFn (ithLayerNN1 :derivative-fn)]
+        {:number-of-nodes (+ (ithLayerNN1 :number-of-nodes) (randomPositive 20))
+         :activation-fn activationFn :derivative-fn derivFn}))
+    layersNN1))
+
 (defn crossover [layersNN1 layersNN2]
   (map
     (fn [ithLayerNN1 ithLayerNN2]
       (let [activationFn (if (> 0.5 (rand 1)) (ithLayerNN1 :activation-fn) (ithLayerNN2 :activation-fn))
             derivFn (if (> 0.5 (rand 1)) (ithLayerNN1 :derivative-fn) (ithLayerNN2 :derivative-fn))]
-      {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
-       :activation-fn activationFn :derivative-fn derivFn}))
+        {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
+         :activation-fn activationFn :derivative-fn derivFn}))
     layersNN1 layersNN2))
 
 (defn breed [trainResults newPopulationSize]
   (let [parents (getBestResults (int (* 0.5 newPopulationSize)) trainResults)]
     (println "parents size: " (count parents))
     (loop [p parents children ()]
-      (if (or (not (seq p)) (< (count p) 2))
+      (if (or (not (seq p)) (< (count p) 4))
         children
-        (recur (rest (rest p)) (conj children (crossover ((nth p 0) :layers) ((nth p 1) :layers))))))))
+        (recur (rest (rest (rest (rest p))))
+          (conj children (crossover ((nth p 0) :layers) ((nth p 1) :layers))
+            (crossover ((nth p 0) :layers) ((nth p 2) :layers))
+            (crossover ((nth p 0) :layers) ((nth p 3) :layers))
+            (crossover ((nth p 1) :layers) ((nth p 2) :layers))
+            (crossover ((nth p 1) :layers) ((nth p 3) :layers))
+            (crossover ((nth p 2) :layers) ((nth p 3) :layers))
+            (mutate ((nth p 0) :layers))
+            (mutate ((nth p 1) :layers))))))))
 
 ;(def structure1 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
 ;                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))
