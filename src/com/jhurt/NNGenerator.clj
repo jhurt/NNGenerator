@@ -74,19 +74,38 @@
   (let [peerIds (keys @peerIdToPipeIdMap)]
     (filter Master/isConnectedToPeer peerIds)))
 
-(def trainingResults (ref ()))
+(def generationToResults (ref {}))
 
-(defn breed [results]
+(defn breed [generation results]
   (let [peers (getLivePeers)
-        children (GA/breed results (count peers))
-        generation ((first results) :generation)]
-    (map
-      (fn [peerId child]
-        (let [msg {:layers (child :layers)
-                   :training-cycles (getMaxTrainingCycles)
+        children (GA/breed results (count peers))]
+    (println "# of children: " (count children))
+    (println "# of live peers: " (count peers))
+    (loop [p peers c children]
+      (if (and (seq p) (seq c))
+        (let [peerId (first p)
+              child (first c)
+              msg {:layers child :training-cycles (getMaxTrainingCycles)
                    :generation (inc generation)}]
           (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
-      peers children)))
+      (recur (rest p) (rest c)))))
+
+(defn breedGeneration [generation]
+  "check to see if the new generation is ready to breed"
+  (let [results (@generationToResults generation)]
+    (if (= (count (getLivePeers)) (count results))
+      (breed generation results))))
+
+(defn addTrainingResult [generation result]
+  (let [results (@generationToResults generation)]
+    (if (seq results)
+      (dosync (ref-set generationToResults (conj @generationToResults {generation (conj results result)})))
+      (dosync (ref-set generationToResults {generation (list result)})))))
+
+(defn removeTrainingGeneration [generation]
+  (let [results (@generationToResults generation)]
+    (if-not (nil? results)
+      (dosync (ref-set @generationToResults (dissoc @generationToResults generation))))))
 
 ;a multimethod for handling incoming messages
 ;the dispatch function is the name of the message element
@@ -103,9 +122,12 @@
 (defmethod handleIncomingMessage Jxta/FINISH_TRAIN_XOR_ELEMENT_NAME [msg]
   (println "master received train xor complete msg: " (msg :value))
   (let [trainResult (deserialize (msg :value))]
-    (dosync (ref-set trainingResults (conj @trainingResults trainResult)))
-    (if (= (count (getLivePeers)) (count @trainingResults))
-      (breed @trainingResults))))
+    (if-not (nil? trainResult)
+      (let [generation (trainResult :generation)]
+        (if-not (nil? generation)
+          (do
+            (addTrainingResult generation trainResult)
+            (breedGeneration generation)))))))
 
 ;fired whenever a slave sends the master a message
 (defn messageInCallback [messages]
