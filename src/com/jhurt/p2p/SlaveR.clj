@@ -40,12 +40,12 @@
 (def discoveryService (ref nil))
 
 (defn sendMessageToMaster [elementName msg]
-    (if-not (nil? @pipe)
-      (do
-        (println "sending message: " msg " to master")
-        (let [strMsgElement (new StringMessageElement elementName msg nil)]
-          (.sendMessage @pipe
-            (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement)))))))
+  (if-not (nil? @pipe)
+    (do
+      (println "sending message: " msg " to master\n")
+      (let [strMsgElement (new StringMessageElement elementName msg nil)]
+        (.sendMessage @pipe
+          (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement)))))))
 
 (defn trainNetworkCallback [weights error generation layers]
   (let [msg {:weights weights :error error :generation generation :layers layers}]
@@ -94,7 +94,7 @@
   (loop [advs advsIn]
     (if (and (seq? advs) (not (nil? (first advs))))
       (do
-        (println "advertisement type: " (.getAdvType (first advs)))
+        ;(println "advertisement type: " (.getAdvType (first advs)))
         (if (instance? PipeAdvertisement (first advs))
           (do (createPipeFromAdv (first advs)) (heartbeat)))
         (recur (rest advs))))))
@@ -107,7 +107,7 @@
           remoteAdvertisements (.getAdvertisements response)
           localAdvertisements
           (.getLocalAdvertisements @discoveryService DiscoveryService/ADV nil nil)]
-      (println "slave received discovery response from node: " (.getSource event) "\n")
+      ;(println "slave received discovery response from node: " (.getSource event) "\n")
       (findPipeAdv (enumeration-seq remoteAdvertisements))))))
 
 (defn registrationLoop [#^DiscoveryService discoveryService]

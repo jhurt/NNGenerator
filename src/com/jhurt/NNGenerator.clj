@@ -77,21 +77,21 @@
 (def generationToResults (ref {}))
 
 (defn breed [generation results]
+  (println "******* breeding generation: " generation "\n\n")
   (let [peers (getLivePeers)
         children (GA/breed results (count peers))]
-    (println "# of children: " (count children))
-    (println "# of live peers: " (count peers))
     (loop [p peers c children]
       (if (and (seq p) (seq c))
         (let [peerId (first p)
               child (first c)
               msg {:layers child :training-cycles (getMaxTrainingCycles)
                    :generation (inc generation)}]
-          (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
-      (recur (rest p) (rest c)))))
+          (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))
+          (recur (rest p) (rest c)))))))
 
-(defn breedGeneration [generation]
-  "check to see if the new generation is ready to breed"
+(defn breedGeneration
+  "check to see if the generation is ready to breed"
+  [generation]
   (let [results (@generationToResults generation)]
     (if (= (count (getLivePeers)) (count results))
       (breed generation results))))
@@ -100,7 +100,7 @@
   (let [results (@generationToResults generation)]
     (if (seq results)
       (dosync (ref-set generationToResults (conj @generationToResults {generation (conj results result)})))
-      (dosync (ref-set generationToResults {generation (list result)})))))
+      (dosync (ref-set generationToResults (conj @generationToResults {generation (list result)}))))))
 
 (defn removeTrainingGeneration [generation]
   (let [results (@generationToResults generation)]
@@ -120,7 +120,6 @@
     (assoc (sorted-map) (msg :pipeId) msg)))))
 
 (defmethod handleIncomingMessage Jxta/FINISH_TRAIN_XOR_ELEMENT_NAME [msg]
-  (println "master received train xor complete msg: " (msg :value))
   (let [trainResult (deserialize (msg :value))]
     (if-not (nil? trainResult)
       (let [generation (trainResult :generation)]
