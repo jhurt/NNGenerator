@@ -14,7 +14,6 @@
   (:require [com.jhurt.nn.Clusterer :as Clusterer])
   (:require [com.jhurt.nn.Input :as Input])
   (:require [com.jhurt.nn.Common :as Common])
-  (:use [com.jhurt.SwingUtils :only (doOnEdt)])
   (:use [com.jhurt.Plot3D :as Plot3D])
   (:use [com.jhurt.ThreadUtils]))
 

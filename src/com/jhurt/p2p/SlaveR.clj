@@ -27,7 +27,7 @@
   '(net.jxta.pipe PipeID PipeMsgEvent PipeMsgListener PipeService)
   '(net.jxta.logging Logging)
   '(net.jxta.util JxtaBiDiPipe JxtaServerPipe)
-  '(java.io File)
+  '(java.io File IOException)
   '(java.net URI)
   '(java.util Enumeration))
 
@@ -68,8 +68,10 @@
 
 ;attempt to create a bidirectional pipe based on the pipe advertisement
 (defn createPipeFromAdv [#^PipeAdvertisement adv]
-  (if (or (nil? @pipe) (not (.isBound @pipe)))
-    (dosync (ref-set pipe (new JxtaBiDiPipe @netPeerGroup adv Integer/MAX_VALUE pipeMsgListener true)))))
+  (try
+    (if (or (nil? @pipe) (not (.isBound @pipe)))
+      (dosync (ref-set pipe (new JxtaBiDiPipe @netPeerGroup adv Integer/MAX_VALUE pipeMsgListener true))))
+    (catch IOException ioe (dosync ref-set pipe nil))))
 
 ;send a heartbeat message along the pipe
 (defn sendHeartbeat [#^JxtaBiDiPipe pipe]
