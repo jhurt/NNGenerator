@@ -23,17 +23,23 @@
   '(edu.umd.cs.piccolo.event PDragEventHandler PInputEvent PInputEventFilter)
   '(edu.umd.cs.piccolo.nodes PPath))
 
-(defn createNode [xPosition yPosition]
+(defn createNode
+  "create a single node"
+  [xPosition yPosition]
   (doto (PPath/createEllipse xPosition yPosition 20 20)
     (.addAttribute "edges" (new ArrayList ()))))
 
-(defn getNodesForLayer [numberOfNodes xPosition]
+(defn getNodesForLayer
+  "get a set of nodes for a single layer"
+  [numberOfNodes xPosition]
   (loop [num numberOfNodes nodes [] yPosition 100]
     (if (= 0 num)
       nodes
       (recur (dec num) (conj nodes (createNode xPosition yPosition)) (+ yPosition 40)))))
 
-(defn buildNodes [nnLayers inputArity outputArity]
+(defn buildNodes
+  "build a set of nodes based on the hidden layers, input and output arity"
+  [nnLayers inputArity outputArity]
   (loop [layers nnLayers
          nodes [(getNodesForLayer inputArity 100)]
          xPosition 200]
@@ -43,7 +49,9 @@
         (conj nodes (getNodesForLayer ((first layers) :number-of-nodes) xPosition))
         (+ xPosition 100)))))
 
-(defn addNodesToCanvas [nodeLayer nodes]
+(defn addNodesToCanvas
+  "add the nodes from all nn layers to the PCanvas"
+  [nodeLayer nodes]
   (loop [n nodes]
     (if (seq n)
       (do
@@ -51,15 +59,53 @@
           (if (seq children) (do (.addChild nodeLayer (first children)) (recur (rest children)))))
         (recur (rest n))))))
 
+(defn updateEdge [edge]
+  (let [node1 (.get (.getAttribute edge "nodes") 0)
+        node2 (.get (.getAttribute edge "nodes") 1)
+        start (.getCenter2D (.getFullBoundsReference node1))
+        end (.getCenter2D (.getFullBoundsReference node2))]
+    (doto edge (.reset)
+      (.moveTo (.getX start) (.getY start))
+      (.lineTo (.getX end) (.getY end)))))
+
+(defn addEdgesToCanvas
+  "add the edges to the PCanvas"
+  [edgeLayer edges]
+  (loop [e edges]
+    (if (seq e)
+      (do
+        (loop [children (first e)]
+          (if (seq children) (do (.addChild edgeLayer (first children)) (updateEdge (first children)) (recur (rest children)))))
+        (recur (rest e))))))
+
+(defn getEdges [weights nodes]
+  (loop [w weights
+         n nodes
+         edges []]
+    (if (= 1 (count n))
+      edges
+      (recur w (rest n)
+        (conj edges (for [x (first n) y (first (rest n))]
+          (let [edge (new PPath)]
+            (.addAttribute edge "nodes" (new ArrayList))
+            (.add (.getAttribute x "edges") edge)
+            (.add (.getAttribute y "edges") edge)
+            (.add (.getAttribute edge "nodes") x)
+            (.add (.getAttribute edge "nodes") y)
+            edge)))))))
+
 (defn getNewCanvas [weights nnLayers inputArity]
   (let [canvas (new PCanvas)
         nodeLayer (.getLayer canvas)
         edgeLayer (new PLayer)
-        nodes (buildNodes nnLayers inputArity (count (first (last weights))))]
+        nodes (buildNodes nnLayers inputArity (count (first (last weights))))
+        edges (getEdges weights nodes)]
+
     (do
       (.addChild (.getRoot canvas) edgeLayer)
       (.addLayer (.getCamera canvas) 0 edgeLayer)
       (addNodesToCanvas nodeLayer nodes)
+      (addEdgesToCanvas edgeLayer edges)
       (.setVisible canvas true))
     canvas))
 
@@ -78,15 +124,3 @@
       (.setSize 800 600)
       (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
       (.setVisible true))))
-
-;			PNode node1 = nodeLayer.getChild(n1);
-;			PNode node2 = nodeLayer.getChild(n2);
-;			PPath edge = new PPath();
-;			((ArrayList)node1.getAttribute("edges")).add(edge);
-;			((ArrayList)node2.getAttribute("edges")).add(edge);
-;			edge.addAttribute("nodes", new ArrayList());
-;			((ArrayList)edge.getAttribute("nodes")).add(node1);
-;			((ArrayList)edge.getAttribute("nodes")).add(node2);
-;			edgeLayer.addChild(edge)
- 
-
