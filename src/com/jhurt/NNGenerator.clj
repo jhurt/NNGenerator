@@ -21,7 +21,7 @@
   (:require [com.jhurt.nn.ActivationFunctions :as Afns]))
 
 (import
-  '(javax.swing JButton JFrame JLabel JMenu JMenuBar JMenuItem JPanel JProgressBar JScrollPane JSplitPane JTable JTextField)
+  '(javax.swing JButton JFrame JLabel JMenu JMenuBar JMenuItem JPanel JProgressBar JScrollPane JSplitPane JTabbedPane JTable JTextField)
   '(javax.swing.table AbstractTableModel)
   '(java.awt Color BorderLayout GridBagConstraints GridBagLayout Insets)
   '(java.awt.event ActionListener)
@@ -49,6 +49,8 @@
   (Integer/parseInt (.getText inputNumberOfGenerations)))
 
 (def progressBar (doto (new JProgressBar 0) (.setValue 0) (.setStringPainted true)))
+
+(declare tabbedPane)
 
 (def generateXorMenuItem (new JMenuItem "Generate XOR NN"))
 
@@ -98,6 +100,9 @@
     (if-not (nil? results)
       (dosync (ref-set generationToResults (dissoc @generationToResults generation))))))
 
+(defn getResultsPanel [] ;TODO
+  )
+
 (defn checkBreedGeneration
   "check to see if the generation is ready to breed"
   [generation results]
@@ -113,7 +118,9 @@
         (breed generation results)
         (removeTrainingGeneration generation)
         (SwingUtils/doOnEdt
-          #(do (.setValue progressBar generation)))))))
+          #(do
+            (.addTab tabbedPane "Training Results"(getResultsPanel))
+            (.setValue progressBar generation)))))))
 
 (defn addTrainingResult [generation result]
   (dosync
@@ -260,7 +267,6 @@
     (set! (.gridx constraints) 1)
     (.add topLeftPanel inputNumberOfGenerations constraints)
 
-
     (set! (.insets constraints) (new Insets 30 0 30 0))
     (set! (.gridx constraints) 0)
     (set! (.gridy constraints) 5)
@@ -275,6 +281,9 @@
 (def nodeTable (doto (new JTable) (.setModel tableModel)))
 
 (def tableScrollPane (new JScrollPane nodeTable))
+
+(def tabbedPane (doto (new JTabbedPane)
+  (.addTab "Slaves" tableScrollPane)))
 
 (def splitPane (doto (new JSplitPane JSplitPane/HORIZONTAL_SPLIT leftPanel tableScrollPane)
   (.setContinuousLayout true)

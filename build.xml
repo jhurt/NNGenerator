@@ -18,6 +18,9 @@
 		<fileset dir="${jxta.lib.dir}">
 			<include name="**/*.jar" />
 		</fileset>
+        <fileset dir="${piccolo.lib.dir}">
+            <include name="**/*.jar" />
+        </fileset>
 		<fileset dir="${clojure.lib.dir}">
 			<include name="clojure.jar" />
 		</fileset>
@@ -80,6 +83,7 @@
             <arg value="com.jhurt.ga.GA" />
 
             <arg value="com.jhurt.CollectionsUtils" />
+            <arg value="com.jhurt.Graph" />
             <arg value="com.jhurt.Math" />
             <arg value="com.jhurt.NNGenerator" />
             <arg value="com.jhurt.Plot3D" />
@@ -125,6 +129,7 @@
 			<fileset dir="${scripts.dir}/windows">
 				<include name="**/*" />
 			</fileset>
+            <fileset dir="${piccolo.lib.dir}" includes="**/*.jar" />
 			<fileset dir="${jxta.lib.dir}" includes="**/*.jar" />
 			<fileset dir="${clojure.lib.dir}" includes="clojure.jar" />
 		</copy>
