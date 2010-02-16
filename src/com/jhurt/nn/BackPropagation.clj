@@ -14,65 +14,75 @@
 ;; Loosely based on back propagation algorithm described in
 ;; R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996, pp 167-171
 
-(ns com.jhurt.nn.BackPropagation)
+(ns com.jhurt.nn.BackPropagation
+  (:use [com.jhurt.nn.ActivationFunctions]))
+
 (use 'com.jhurt.Math)
-(use 'com.jhurt.nn.ActivationFunctions)
 (use 'com.jhurt.nn.Input)
 (use 'com.jhurt.nn.Common)
-
 
 ;learning constant defines step length of correction
 (def gamma 0.3)
 
-(def trainedWeights (ref nil))
-
 (defn calculateOutput
   "Get the output of the network for a single input"
-  [activationFn input weights]
-  (let [nodeOutputs (list)]
-    (loop [input input
-           nodeOutputs nodeOutputs]
-      (if (= (count weights) (count nodeOutputs))
-        (butlast (last nodeOutputs))
-        (let [index (count nodeOutputs)
-              nodeOutput (map activationFn (vectorByMatrix input (nth weights index)))
-              extNodeOutput (concat nodeOutput [1.0])]
-          (recur extNodeOutput (concat nodeOutputs (list extNodeOutput))))))))
+  [layers input weights]
+  (loop [i input
+         w weights
+         l layers
+         nodeOutputs []]
+    (if-not (seq w)
+      (last nodeOutputs)
+      (let [activationFn ((first l) :activation-fn)
+            extI (concat i [1.0])
+            nodeOutput (map activationFn (vectorByMatrix extI (first w)))]
+        (recur nodeOutput
+          (rest w) (rest l) (concat nodeOutputs (vector nodeOutput)))))))
 
 (defn calculateNodeValues
   "Get the output of the activation function and the corresponding
   derivative of the activation function for each node in the network"
-  [activationFn activationFnDerivative input weights]
-  (let [nodeOutputs (list) nodeDerivatives (list)]
-    (loop [input input
-           nodeOutputs nodeOutputs
-           nodeDerivatives nodeDerivatives]
-      (if (= (count weights) (count nodeOutputs))
-        {:nodeOutputs nodeOutputs :nodeDerivatives nodeDerivatives}
-        (let [index (count nodeOutputs)
-              nodeOutput (map activationFn (vectorByMatrix input (nth weights index)))
-              extNodeOutput (concat nodeOutput [1.0])
-              nodeDerivative (map activationFnDerivative extNodeOutput)]
-          (recur extNodeOutput
-            (concat nodeOutputs (list extNodeOutput))
-            (concat nodeDerivatives (list nodeDerivative))))))))
+  [layers input weights]
+  (loop [i input
+         w weights
+         l layers
+         nodeOutputs []
+         nodeDerivatives []]
+    (if-not (and (seq i) (seq w))
+      {:nodeOutputs nodeOutputs :nodeDerivatives nodeDerivatives}
+      (let [activationFn ((first l) :activation-fn)
+            activationFnDerivative ((first l) :derivative-fn)
+            extI (concat i [1.0])
+            nodeOutput (map activationFn (vectorByMatrix extI (first w)))
+            nodeDerivative (map activationFnDerivative nodeOutput)]
+        (recur
+          nodeOutput
+          (rest w)
+          (rest l)
+          (concat nodeOutputs (vector nodeOutput))
+          (concat nodeDerivatives (vector nodeDerivative)))))))
 
 (defn calculateNodeErrors
   "Get the backpropagated error for each node, the results are stored in
   reverse order of the network, the first vector is the backprogated error
   for the output layer"
   [nodeValues weights actualOutput]
-  (let [errors (list)]
-    (loop [errors errors]
-      (if (= (count errors) (count weights))
-        errors
-        (let [index (- (count weights) (inc (count errors)))
-              weightsIndex (inc index)
-              difference (if (= 0 (count errors))
-            (arrayLessAnother (nth (:nodeOutputs nodeValues) index) actualOutput)
-            (matrixByVector (nth weights weightsIndex) (last errors)))
-              error (map * (nth (:nodeDerivatives nodeValues) index) difference)]
-          (recur (concat errors (list error))))))))
+  (loop [o (reverse (nodeValues :nodeOutputs))
+         d (reverse (nodeValues :nodeDerivatives))
+         w (reverse weights)
+         errors []]
+    (if-not (and (seq o) (seq w))
+      errors
+      (let [v (first o)
+            dv (first d)
+            difference
+            (if (= 0 (count errors))
+              (arrayLessAnother v actualOutput)
+              (matrixByVector (first w) (last errors)))
+            error (map * dv difference)]
+        (if (= 0 (count errors))
+          (recur (rest o) (rest d) w (concat errors (vector error)))
+          (recur (rest o) (rest d) (rest w) (concat errors (vector error))))))))
 
 (defn calculateRmsError
   "Get the root mean squared error for the output layer of the network"
@@ -82,55 +92,40 @@
 (defn getWeightDeltas
   "Get the weight deltas for each layer based on
   the given backpropogated errors"
-  [extendedInput errors nodeOutputs]
-  (let [deltas (list)]
-    (loop [errorIndex (dec (count nodeOutputs))
-           nodeValueIndex -1
-           deltas deltas]
-      (if (= (count nodeOutputs) (count deltas))
-        deltas
-        (let [delta (if (= 0 (count deltas))
-          (multiplyScalar (makeMatrix extendedInput (nth errors errorIndex)) gamma)
-          (multiplyScalar
-            (makeMatrix (nth nodeOutputs nodeValueIndex) (nth errors errorIndex)) gamma))]
-          (recur (dec errorIndex) (inc nodeValueIndex) (concat deltas (list delta))))))))
+  [input nodeOutputs errors]
+  (loop [l (concat (vector input) nodeOutputs)
+         e (reverse errors)
+         deltas []]
+    (if-not (and (seq l) (seq e))
+      deltas
+      (let [i (conj (first l) 1.0)
+            delta (multiplyScalar (makeMatrix i (first e)) gamma)]
+        (recur (rest l) (rest e) (conj deltas delta))))))
 
 (defn trainNetwork
   "Train the network with the given inputs/outputs and initial weight set.
    Training terminates when either the error of the network is less than the
    desired RMS error or when there are no more training samples"
-  [inputs outputs weights desiredRms]
+  [layers inputs outputs weights]
   (loop [inputs inputs
          outputs outputs
          weights weights
          rmsError 1.0]
-    (if (and (< desiredRms rmsError) (and (seq inputs) (seq outputs)))
+    (if (and (seq inputs) (seq outputs))
       (let [input (first inputs)
-            extendedInput (concat input [1.0])
             output (first outputs)
             ;feed-forward step
             nodeValues
-            (calculateNodeValues hyperbolicTangent hyperbolicTangentDerivative extendedInput weights)
+            (calculateNodeValues layers input weights)
             ;backpropagation step
             errors (calculateNodeErrors nodeValues weights output)
             ;calculate weight deltas
-            deltas (getWeightDeltas extendedInput errors (:nodeOutputs nodeValues))]
-          ;update weights and recurse step
-          (recur (rest inputs) (rest outputs)
+            deltas (getWeightDeltas input (nodeValues :nodeOutputs) errors)]
+        ;update weights and recurse step
+        (recur (rest inputs) (rest outputs)
           (map matrixSubtract weights deltas) (calculateRmsError (first errors))))
-      (dosync (ref-set trainedWeights weights)))))
+      {:rms-error rmsError :weights weights})))
 
-(def XOR-table {[-1 -1] [-1]
-                [-1 1] [1]
-                [1 -1] [1]
-                [1 1] [-1]})
-
-(defn trainXOR [numCycles]
-  ;TODO replace take with repeatable
-  (let [inputs (take numCycles (cycle (keys XOR-table)))
-        outputs (take numCycles (cycle (vals XOR-table)))
-        weights (list (getRandomWeightVectors 2 3) (getRandomWeightVectors 3 4))]
-    (trainNetwork inputs outputs weights 0.00001)))
-
-(defn classifyInput [input]
-  (calculateOutput hyperbolicTangent (concat input [1.0]) @trainedWeights))
+(defn train [structure weights]
+  (trainNetwork (structure :layers) (structure :inputs) (structure :outputs)
+    weights))

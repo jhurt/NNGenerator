@@ -18,7 +18,8 @@
   (:require [com.jhurt.ThreadUtils :as ThreadUtils])
   (:require [com.jhurt.CollectionsUtils :as CU])
   (:require [com.jhurt.ga.GA :as GA])
-  (:require [com.jhurt.nn.ActivationFunctions :as Afns]))
+  (:require [com.jhurt.nn.ActivationFunctions :as Afns])
+  (:require [com.jhurt.Graph :as Graph]))
 
 (import
   '(javax.swing JButton JFrame JLabel JMenu JMenuBar JMenuItem JPanel JProgressBar JScrollPane JSplitPane JTabbedPane JTable JTextField)
@@ -100,27 +101,39 @@
     (if-not (nil? results)
       (dosync (ref-set generationToResults (dissoc @generationToResults generation))))))
 
-(defn getResultsPanel [] ;TODO
-  )
+(defn launchGraphWindow [canvas]
+  (let [frame (new JFrame)]
+    (.. frame (getContentPane) (add canvas))
+    (doto frame
+      (.setTitle "Resultant NN")
+      (.setSize 800 600)
+      (.setVisible true))))
 
 (defn checkBreedGeneration
   "check to see if the generation is ready to breed"
   [generation results]
   (println " " (count results) " results for generation: " generation)
   (if (= (count (getLivePeers)) (count results))
-    (if (= generation (getNumberOfGenerations))
-      (do
-        (println "final results: " results)
-        (SwingUtils/doOnEdt
-          #(do (.setValue progressBar generation)
-            (.setEnabled generateXorMenuItem true))))
-      (do
-        (breed generation results)
-        (removeTrainingGeneration generation)
-        (SwingUtils/doOnEdt
-          #(do
-            (.addTab tabbedPane "Training Results"(getResultsPanel))
-            (.setValue progressBar generation)))))))
+    (do (removeTrainingGeneration generation)
+      (if (= generation (getNumberOfGenerations))
+        (do
+          (println "final results: " results)
+          (SwingUtils/doOnEdt
+            #(do
+              (.setValue progressBar generation)
+              (.setEnabled generateXorMenuItem true)
+              (let [child (GA/getHealthiestChild results)
+                    layers (child :layers)
+                    weights (child :weights)
+                    inputArity 3]
+                (launchGraphWindow (Graph/getNewCanvas weights layers inputArity))))))
+        ;(.addTab tabbedPane "Training Results" (Graph/getNewCanvas weights layers inputArity))))))
+        (do
+          (breed generation results)
+          (removeTrainingGeneration generation)
+          (SwingUtils/doOnEdt
+            #(do
+              (.setValue progressBar generation))))))))
 
 (defn addTrainingResult [generation result]
   (dosync

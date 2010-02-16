@@ -81,7 +81,6 @@
         (println "master publishing register pipe advertisement")
         (.publish discoveryService pipeAdv)
         (.remotePublish discoveryService pipeAdv)
-        (println "master sleeping for: " waitTime " ms.\n")
         (Thread/sleep waitTime)))))
 
 (defn acceptNewPeerConnection [#^JxtaBiDiPipe pipe]
@@ -100,7 +99,7 @@
     #(while @listen
       (if-not (.isClosed serverPipe)
         (do
-          (println "server waiting for peer connection\n")
+          (println "\n\nserver waiting for peer connection\n")
           (acceptNewPeerConnection (.accept serverPipe)))
         (Thread/sleep 100)))))
 

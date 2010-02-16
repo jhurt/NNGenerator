@@ -17,12 +17,16 @@
   [size number]
   (take number (repeatedly (fn [] (take size (repeatedly rand))))))
 
-(defn getRandomWeightMatrices [layers inputArity]
+(defn getRandomWeightMatrices [layers inputArity outputArity]
   (println "building weight matrices")
-  (loop [x inputArity
+  (loop [num (inc inputArity)
          hiddenLayers layers
-         weights (vector)]
-    (if-not (seq hiddenLayers)
-      weights
-      (let [y ((first hiddenLayers) :number-of-nodes)]
-        (recur y (rest hiddenLayers) (conj weights (getRandomWeightVectors x y)))))))
+         weights []]
+    (let [size (if-not (seq hiddenLayers)
+      outputArity
+      ((first hiddenLayers) :number-of-nodes))]
+      (if (= (count weights) (count layers))
+        weights
+        (recur (inc size)
+          (rest hiddenLayers)
+          (conj weights (getRandomWeightVectors size num)))))))

@@ -72,9 +72,9 @@
         (let [index (- (count weights) (inc (count errors)))
               weightsIndex (inc index)
               difference (if (= 0 (count errors))
-            (arrayLessAnother (nth (:nodeOutputs nodeValues) index) actualOutput)
+            (arrayLessAnother (nth (nodeValues :nodeOutputs) index) actualOutput)
             (matrixByVector (nth weights weightsIndex) (last errors)))
-              error (map * (nth (:nodeDerivatives nodeValues) index) difference)]
+              error (map * (nth (nodeValues :nodeDerivatives) index) difference)]
           (recur (concat errors (list error))))))))
 
 (defn calculateRmsError
@@ -107,6 +107,7 @@
          outputs outputs
          weights weights
          rmsError 1.0]
+    (println "weights " weights)
     (if (and (seq inputs) (seq outputs))
       ;do one step of training
       (let [input (first inputs)
@@ -117,7 +118,8 @@
             ;backpropagation
             errors (calculateNodeErrors nodeValues weights output)
             ;calculate weight deltas
-            deltas (getWeightDeltas extendedInput errors (:nodeOutputs nodeValues))]
+            deltas (getWeightDeltas extendedInput errors (nodeValues :nodeOutputs))]
+        (println "deltas: " deltas)
         ;update weights and recurse step
         (recur (rest inputs) (rest outputs)
           (map matrixSubtract weights deltas) (calculateRmsError (first errors))))

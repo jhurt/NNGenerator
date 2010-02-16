@@ -41,11 +41,9 @@
 
 (defn sendMessageToMaster [elementName msg]
   (if-not (nil? @pipe)
-    (do
-      (println "sending message: " msg " to master\n")
-      (let [strMsgElement (new StringMessageElement elementName msg nil)]
-        (.sendMessage @pipe
-          (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement)))))))
+    (let [strMsgElement (new StringMessageElement elementName msg nil)]
+      (.sendMessage @pipe
+        (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement))))))
 
 (defn trainNetworkCallback [weights error generation layers]
   (let [msg {:weights weights :error error :generation generation :layers layers}]

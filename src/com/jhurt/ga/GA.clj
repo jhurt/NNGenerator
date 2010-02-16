@@ -23,8 +23,12 @@
                         :activation-fn activationFn
                         :derivative-fn derivFn}))))))
 
+
 (defn sortTrainResults [trainResults]
   (sort-by :error < trainResults))
+
+(defn getHealthiestChild [trainResults]
+  (first (sortTrainResults trainResults)))
 
 (defn getBestResults [num trainResults]
   (take num (sortTrainResults trainResults)))
@@ -62,10 +66,3 @@
             (crossover ((nth p 2) :layers) ((nth p 3) :layers))
             (mutate ((nth p 0) :layers))
             (mutate ((nth p 1) :layers))))))))
-
-;(def structure1 {:inputs (take numberOfTrainingDatum (cycle (keys XOR-table)))
-;                 :outputs (take numberOfTrainingDatum (cycle (vals XOR-table)))
-;                 :layers
-;                 (list {:number-of-nodes 5 :activation-fn Afns/hyperbolicTangent :derivative-fn Afns/hyperbolicTangentDerivative}
-;                   {:number-of-nodes 5 :activation-fn Afns/hyperbolicTangent :derivative-fn Afns/hyperbolicTangentDerivative})})
-
