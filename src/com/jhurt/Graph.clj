@@ -97,7 +97,8 @@
             edge)))))))
 
 (defn drawWeights [edgeLayer edges weights]
-  (loop [e (CU/flatten (rest edges)) w (CU/flatten weights)]
+  (loop [e (CU/flatten edges) w (CU/flatten weights)]
+    (println "count edges: " (count e) " count weights: " (count w))
     (if (and (seq e) (seq w))
       (do
         (let [edge (first e)
@@ -111,7 +112,7 @@
           (doto text (.setX (+ 15.0 (.getX start))) (.setY (.getY start))
             (.setFont (new Font "Times New Roman", Font/PLAIN, 6))
             (.rotateAboutPoint theta (.getX start) (.getY start))))
-        (recur (rest e) (rest w))))))
+        (recur (rest e) (rest w)))))) 
 
 (defn getNewCanvas [weights nnLayers inputArity]
   (let [canvas (new PCanvas)

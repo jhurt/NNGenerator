@@ -125,7 +125,7 @@
               (let [child (GA/getHealthiestChild results)
                     layers (child :layers)
                     weights (child :weights)
-                    inputArity 3]
+                    inputArity 2]
                 (launchGraphWindow (Graph/getNewCanvas weights layers inputArity))))))
         ;(.addTab tabbedPane "Training Results" (Graph/getNewCanvas weights layers inputArity))))))
         (do

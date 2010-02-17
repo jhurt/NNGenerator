@@ -10,7 +10,7 @@
 ;;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (ns com.jhurt.ga.GA
-  (:use [com.jhurt.Math :only (randomPositive)]))
+  (:use [com.jhurt.Math :only (randomPositive randomBounded)]))
 
 (defn randomNetworkLayers [maxLayers maxNodesPerLayer activationFn derivFn]
   (let [totalLayers (randomPositive maxLayers)]
@@ -38,7 +38,7 @@
     (fn [ithLayerNN1]
       (let [activationFn (ithLayerNN1 :activation-fn)
             derivFn (ithLayerNN1 :derivative-fn)]
-        {:number-of-nodes (+ (ithLayerNN1 :number-of-nodes) (randomPositive 20))
+        {:number-of-nodes (+ (ithLayerNN1 :number-of-nodes) (randomBounded -5 5))
          :activation-fn activationFn :derivative-fn derivFn}))
     layersNN1))
 
@@ -64,5 +64,5 @@
             (crossover ((nth p 1) :layers) ((nth p 2) :layers))
             (crossover ((nth p 1) :layers) ((nth p 3) :layers))
             (crossover ((nth p 2) :layers) ((nth p 3) :layers))
-            (mutate ((nth p 0) :layers))
-            (mutate ((nth p 1) :layers))))))))
+            (crossover ((nth p 0) :layers) ((nth p 1) :layers))
+            (crossover ((nth p 0) :layers) ((nth p 1) :layers))))))))

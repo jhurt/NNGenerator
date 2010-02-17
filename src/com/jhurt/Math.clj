@@ -16,6 +16,12 @@
 (defn randomPositive [x]
   (int (Math/ceil (* x (rand 1)))))
 
+(defn randomBounded [x y]
+  (let [z (+ (rand (- y x)) x)]
+    (if (>= z 0)
+      (int (Math/ceil z))
+      (int (Math/floor z)))))
+
 ;; Matrix Functions
 
 (defn transposeMatrix2 [matrix]
