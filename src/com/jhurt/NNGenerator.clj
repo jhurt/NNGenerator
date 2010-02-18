@@ -19,6 +19,7 @@
   (:require [com.jhurt.CollectionsUtils :as CU])
   (:require [com.jhurt.ga.GA :as GA])
   (:require [com.jhurt.nn.ActivationFunctions :as Afns])
+  (:require [com.jhurt.nn.Common :as Common])
   (:require [com.jhurt.Graph :as Graph]))
 
 (import
@@ -125,8 +126,9 @@
               (let [child (GA/getHealthiestChild results)
                     layers (child :layers)
                     weights (child :weights)
-                    inputArity 2]
-                (launchGraphWindow (Graph/getNewCanvas weights layers inputArity))))))
+                    inputArity 2
+                    outputArity 1]
+                (launchGraphWindow (Graph/getNewCanvas weights layers inputArity outputArity))))))
         ;(.addTab tabbedPane "Training Results" (Graph/getNewCanvas weights layers inputArity))))))
         (do
           (breed generation results)
@@ -218,7 +220,7 @@
     (actionPerformed [e]
       (ThreadUtils/onThread
         (fn [] (doall (map
-          (fn [peerId] (let [layers (GA/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) Afns/logistic Afns/logisticDerivative)
+          (fn [peerId] (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) Afns/logistic Afns/logisticDerivative)
                              msg {:layers layers :training-cycles (getMaxTrainingCycles) :generation 1}]
             (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
           (getLivePeers)))
