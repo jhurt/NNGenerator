@@ -161,7 +161,7 @@
 
 (defn -main []
   (let [frame (new JFrame)
-        layers (Common/randomNetworkLayers 3 5 Afns/logistic Afns/logisticDerivative)
+        layers (Common/randomNetworkLayers 5 8 Afns/logistic Afns/logisticDerivative)
         inputArity 2
         outputArity 1
         weights (Common/getRandomWeightMatrices layers inputArity outputArity)

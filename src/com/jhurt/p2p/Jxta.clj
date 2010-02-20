@@ -25,9 +25,9 @@
 
 (defstruct InputMessage :pipeId :name :value :time)
 
-(def RDV_URI "tcp://70.180.196.124:9701")
+;(def RDV_URI "tcp://70.180.196.124:9701")
 ;(def RDV_URI "tcp://192.168.0.196:9701")
-;(def RDV_URI "tcp://192.168.0.190:9701")
+(def RDV_URI "tcp://127.0.0.1:9701")
 
 (def NETWORK_NAME "NNGeneratorNetwork")
 

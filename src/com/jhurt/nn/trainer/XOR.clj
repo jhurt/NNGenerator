@@ -20,9 +20,7 @@
                 [1 1] [-1]})
 
 (defn trainStructure [structure generation callback]
-  (let [inputArity (count (first (structure :inputs)))
-        outputArity (count (first (structure :outputs)))
-        weights (getRandomWeightMatrices (structure :layers) inputArity outputArity)
+  (let [weights (getRandomWeightMatrices (structure :layers) 2 1)
         result (BP/train structure weights)]
     (callback (result :weights) (result :rms-error) generation (structure :layers))))
 

@@ -48,7 +48,7 @@
          l layers
          nodeOutputs []
          nodeDerivatives []]
-    (if-not (and (seq i) (seq w))
+    (if-not (and (seq l) (seq w))
       {:nodeOutputs nodeOutputs :nodeDerivatives nodeDerivatives}
       (let [activationFn ((first l) :activation-fn)
             activationFnDerivative ((first l) :derivative-fn)

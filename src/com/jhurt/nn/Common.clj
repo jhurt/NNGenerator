@@ -28,6 +28,7 @@
           [j (if-not (seq hiddenLayers)
                 outputArity
                 ((first hiddenLayers) :number-of-nodes))]
+        ;increment j to account for the bias node at each hidden layer
         (recur (inc j)
           (rest hiddenLayers)
           (conj weights (getRandomWeightVectors j i)))))))
