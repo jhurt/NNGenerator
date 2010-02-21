@@ -130,6 +130,7 @@
                 (launchGraphWindow (Graph/getNewCanvas weights layers inputArity outputArity))))))
         ;(.addTab tabbedPane "Training Results" (Graph/getNewCanvas weights layers inputArity))))))
         (do
+          (println "\n\nresults: " results)
           (breed generation results)
           (removeTrainingGeneration generation)
           (SwingUtils/doOnEdt

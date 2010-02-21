@@ -46,7 +46,11 @@
         (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement))))))
 
 (defn trainNetworkCallback [weights error generation layers]
-  (let [msg {:weights weights :error error :generation generation :layers layers}]
+  (let [; this is a small hack because serializing NaN and deserializing it will result
+        ; in a symbol instead of Double/NaN, so we send 1.0 in the case of NaN
+        ; this should ideally be fixed in Clojure at some point
+        e (if (> error 0.0) error 1.0)
+        msg {:weights weights :error e :generation generation :layers layers}]
     (sendMessageToMaster Jxta/FINISH_TRAIN_XOR_ELEMENT_NAME (serialize msg))))
 
 ;a multimethod for handling incoming messages
@@ -79,13 +83,15 @@
         (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement))]
     (.sendMessage pipe msg)))
 
-;loop as long as a pipe is available, sending a heartbeat message every 30 seconds
+;loop as long as a pipe is available, sending a heartbeat message every 3 minutes
 (defn heartbeat []
   (ThreadUtils/onThread
     #(while (and (not (nil? @pipe)) (.isBound @pipe))
       (do
-        (sendHeartbeat @pipe)
-        (Thread/sleep 30000)))))
+        (try
+          (sendHeartbeat @pipe)
+          (catch IOException ioe (dosync ref-set pipe nil)))
+        (Thread/sleep 180000)))))
 
 ;look for a pipe adv from a seq of advertisements
 ;for the first one that is found, a bidirectional pipe
@@ -115,7 +121,7 @@
     #(while true
       (if (or (nil? @pipe) (not (.isBound @pipe)))
         (.getRemoteAdvertisements discoveryService nil DiscoveryService/ADV nil nil 10000 defaultDiscoveryListener))
-      (Thread/sleep 30000))))
+      (Thread/sleep 60000))))
 
 (defn configureSlaveNode []
   (let [seedingURI (URI/create Jxta/RDV_URI)]

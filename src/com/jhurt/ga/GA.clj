@@ -11,7 +11,8 @@
 
 (ns com.jhurt.ga.GA
   (:use [com.jhurt.Math :only (randomBounded)])
-  (:require [com.jhurt.nn.ActivationFunctions :as Afns]))
+  (:require [com.jhurt.nn.ActivationFunctions :as Afns])
+  (:require [com.jhurt.CollectionsUtils :as CU]))
 
 (defn sortTrainResults [trainResults]
   (sort-by :error < trainResults))
@@ -37,7 +38,10 @@
     {:activation-fn (layer2 :activation-fn)
      :derivative-fn (layer2 :derivative-fn)}))
 
-(defn crossover [layersNN1 layersNN2]
+(defn crossover1
+  "perform a crossover on 2 NN structures, in this version the # of layers will be
+  the least of layersNN1 and layersNN2"
+  [layersNN1 layersNN2]
   (let [newLayers
         (map
           (fn [ithLayerNN1 ithLayerNN2]
@@ -51,6 +55,33 @@
                    :activation-fn (activationFns :activation-fn)
                    :derivative-fn (activationFns :activation-fn)}]
     (conj newLayers lastLayer)))
+
+(defn crossover2
+  "perform a crossover on 2 NN structures, in this version the # of layers will be
+  the most of layersNN1 and layersNN2"
+  [layersNN1 layersNN2]
+  (let [largestLayers (if (> (count layersNN1) (count layersNN2)) layersNN1 layersNN2)
+        difference (Math/abs (- (count layersNN1) (count layersNN2)))
+        numToRemove (- (count largestLayers) difference)
+        firstLayers
+        (map
+          (fn [ithLayerNN1 ithLayerNN2]
+            (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
+              {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
+               :activation-fn (activationFns :activation-fn)
+               :derivative-fn (activationFns :activation-fn)}))
+          (butlast layersNN1) (butlast layersNN2))
+        middleLayers (butlast (CU/removeFirstN largestLayers numToRemove)) 
+        activationFns (getActivationFns (last layersNN1) (last layersNN2))
+        lastLayer {:number-of-nodes ((last layersNN1) :number-of-nodes)
+                   :activation-fn (activationFns :activation-fn)
+                   :derivative-fn (activationFns :activation-fn)}]
+    (conj (concat firstLayers middleLayers) lastLayer)))
+
+(defn crossover [layersNN1 layersNN2]
+  (if (> 0.5 (rand 1))
+    (crossover1 layersNN1 layersNN2)
+    (crossover2 layersNN1 layersNN2)))
 
 (defn breed [trainResults newPopulationSize]
   (let [parents (getBestResults (int (* 0.5 newPopulationSize)) trainResults)]

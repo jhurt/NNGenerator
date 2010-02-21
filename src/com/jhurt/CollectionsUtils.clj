@@ -33,3 +33,13 @@
   [x]
   (filter (complement sequential?)
           (rest (tree-seq sequential? seq x))))
+
+(defn removeFirstN
+  "return a collection with the first n elements of the
+  passed in collection removed"
+  [coll n]
+  (loop [x n
+         results coll]
+    (if (or (= 0 x) (not (seq coll)))
+      results
+      (recur (dec x) (rest results)))))
