@@ -23,26 +23,25 @@
   (loop [i (inc inputArity)
          hiddenLayers layers
          weights []]
-    (if (= (count weights) (inc (count layers)))
+    (if (= (count weights) (count layers))
       weights
-      (let
-        [j (if-not (seq hiddenLayers)
-          outputArity
-          ((first hiddenLayers) :number-of-nodes))]
+      (let [j ((first hiddenLayers) :number-of-nodes)]
         ;increment j to account for the bias node at each hidden layer
         (recur (inc j)
           (rest hiddenLayers)
           (conj weights (getRandomWeightVectors j i)))))))
 
-(defn randomNetworkLayers [maxLayers maxNodesPerLayer]
-  (let [totalLayers (randomPositive maxLayers)
-        activationFn (if (> 0.5 (rand 1)) logistic hyperbolicTangent)
-        derivFn (fnToDerivMap activationFn)]
+(defn randomNetworkLayers [maxLayers maxNodesPerLayer outputArity]
+  (let [totalLayers (randomPositive maxLayers)]
     (loop [numLayers totalLayers
-           layers ()]
-      (if (== 0 numLayers)
-        layers
-        (recur (dec numLayers)
-          (conj layers {:number-of-nodes (randomPositive maxNodesPerLayer)
+           layers []]
+      (let [activationFn (if (> 0.5 (rand 1)) logistic hyperbolicTangent)
+            derivFn (fnToDerivMap activationFn)]
+        (if (== 0 numLayers)
+          (conj layers {:number-of-nodes outputArity
                         :activation-fn activationFn
-                        :derivative-fn derivFn}))))))
+                        :derivative-fn derivFn})
+          (recur (dec numLayers)
+            (conj layers {:number-of-nodes (randomPositive maxNodesPerLayer)
+                          :activation-fn activationFn
+                          :derivative-fn derivFn})))))))

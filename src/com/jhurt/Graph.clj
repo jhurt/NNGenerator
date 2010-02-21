@@ -46,9 +46,11 @@
          nodes [(getNodesForLayer (inc inputArity) 100)]
          xPosition 200]
     (if-not (seq layers)
-      (conj nodes (getNodesForLayer outputArity xPosition))
+      nodes
       (recur (rest layers)
-        (conj nodes (getNodesForLayer (inc ((first layers) :number-of-nodes)) xPosition))
+        (if (= 1 (count layers))
+          (conj nodes (getNodesForLayer ((first layers) :number-of-nodes) xPosition))
+          (conj nodes (getNodesForLayer (inc ((first layers) :number-of-nodes)) xPosition)))
         (+ xPosition 100)))))
 
 (defn addNodesToCanvas
@@ -122,7 +124,7 @@
           (doto text (.setX (+ 15.0 (.getX start))) (.setY (.getY start))
             (.setFont (new Font "Times New Roman", Font/PLAIN, 6))
             (.rotateAboutPoint theta (.getX start) (.getY start))))
-        (recur (rest e) (rest w)))))) 
+        (recur (rest e) (rest w))))))
 
 (defn getNewCanvas [weights nnLayers inputArity outputArity]
   (let [canvas (new PCanvas)
@@ -160,9 +162,9 @@
 
 (defn -main []
   (let [frame (new JFrame)
-        layers (Common/randomNetworkLayers 5 8)
         inputArity 2
         outputArity 1
+        layers (Common/randomNetworkLayers 4 5 outputArity)
         weights (Common/getRandomWeightMatrices layers inputArity outputArity)
         canvas (getNewCanvas weights layers inputArity outputArity)]
     (println "count weights: " (count weights) " count layers: " (count layers))

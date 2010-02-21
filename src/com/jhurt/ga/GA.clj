@@ -38,19 +38,19 @@
      :derivative-fn (layer2 :derivative-fn)}))
 
 (defn crossover [layersNN1 layersNN2]
-  (map
-    (fn [ithLayerNN1 ithLayerNN2]
-      (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
-        {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
-         :activation-fn (activationFns :activation-fn)
-         :derivative-fn (activationFns :activation-fn)}))
-    layersNN1 layersNN2))
-;        lastLayerActFn (if (> 0.5 (rand 1))
-;                     ((last layersNN1) :activation-fn)
-;                     ((last layersNN2) :activation-fn))
-;        lastLayer {:number-of-nodes ((last layersNN1) :number-of-nodes)
-;                   :activation-fn lastLayerActFn
-;                   :derivative-fn (Afns/fnToDerivMap lastLayerActFn)}]
+  (let [newLayers
+        (map
+          (fn [ithLayerNN1 ithLayerNN2]
+            (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
+              {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
+               :activation-fn (activationFns :activation-fn)
+               :derivative-fn (activationFns :activation-fn)}))
+          (butlast layersNN1) (butlast layersNN2))
+        activationFns (getActivationFns (last layersNN1) (last layersNN2))
+        lastLayer {:number-of-nodes ((last layersNN1) :number-of-nodes)
+                   :activation-fn (activationFns :activation-fn)
+                   :derivative-fn (activationFns :activation-fn)}]
+    (conj newLayers lastLayer)))
 
 (defn breed [trainResults newPopulationSize]
   (let [parents (getBestResults (int (* 0.5 newPopulationSize)) trainResults)]

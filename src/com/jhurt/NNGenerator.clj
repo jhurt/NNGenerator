@@ -219,7 +219,7 @@
     (actionPerformed [e]
       (ThreadUtils/onThread
         (fn [] (doall (map
-          (fn [peerId] (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer))
+          (fn [peerId] (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) 1)
                              msg {:layers layers :training-cycles (getMaxTrainingCycles) :generation 1}]
             (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
           (getLivePeers)))
