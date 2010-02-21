@@ -11,7 +11,8 @@
 
 ;Common NN related functions
 (ns com.jhurt.nn.Common
-  (:use [com.jhurt.Math :only (randomPositive)]))
+  (:use [com.jhurt.Math :only (randomPositive)])
+  (:use [com.jhurt.nn.ActivationFunctions]))
 
 (defn getRandomWeightVectors
   "build vector of arity 'number' of vectors of length 'size' populated with random values b/w 0 and 1"
@@ -22,19 +23,21 @@
   (loop [i (inc inputArity)
          hiddenLayers layers
          weights []]
-      (if (= (count weights) (inc (count layers)))
-        weights
-        (let
-          [j (if-not (seq hiddenLayers)
-                outputArity
-                ((first hiddenLayers) :number-of-nodes))]
+    (if (= (count weights) (inc (count layers)))
+      weights
+      (let
+        [j (if-not (seq hiddenLayers)
+          outputArity
+          ((first hiddenLayers) :number-of-nodes))]
         ;increment j to account for the bias node at each hidden layer
         (recur (inc j)
           (rest hiddenLayers)
           (conj weights (getRandomWeightVectors j i)))))))
 
-(defn randomNetworkLayers [maxLayers maxNodesPerLayer activationFn derivFn]
-  (let [totalLayers (randomPositive maxLayers)]
+(defn randomNetworkLayers [maxLayers maxNodesPerLayer]
+  (let [totalLayers (randomPositive maxLayers)
+        activationFn (if (> 0.5 (rand 1)) logistic hyperbolicTangent)
+        derivFn (fnToDerivMap activationFn)]
     (loop [numLayers totalLayers
            layers ()]
       (if (== 0 numLayers)

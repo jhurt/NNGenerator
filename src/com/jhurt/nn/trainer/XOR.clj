@@ -12,7 +12,8 @@
 (ns com.jhurt.nn.trainer.XOR
   (:require [com.jhurt.nn.BackPropagation :as BP])
   (:use [com.jhurt.nn.ActivationFunctions])
-  (:use [com.jhurt.nn.Common]))
+  (:use [com.jhurt.nn.Common])
+  (:use [com.jhurt.CollectionsUtils]))
 
 (def XOR-table {[-1 -1] [-1]
                 [-1 1] [1]
@@ -22,6 +23,7 @@
 (defn trainStructure [structure generation callback]
   (let [weights (getRandomWeightMatrices (structure :layers) 2 1)
         result (BP/train structure weights)]
+    (println "count weights: " (count weights) " count layers: " (count (structure :layers)))
     (callback (result :weights) (result :rms-error) generation (structure :layers))))
 
 (defn train [layers numberOfDatum generation callback]

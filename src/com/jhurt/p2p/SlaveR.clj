@@ -54,7 +54,7 @@
 (defmulti handleIncomingMessage (fn [msgElem] (.getElementName msgElem)))
 
 (defmethod handleIncomingMessage Jxta/TRAIN_XOR_ELEMENT_NAME [msgElem]
-  (println "slave received train xor msg: " (str msgElem))
+  (println "\n\nslave received train xor msg: " (str msgElem))
   (let [msg (deserialize (str msgElem))]
     (XOR/train (msg :layers) (msg :training-cycles) (msg :generation) trainNetworkCallback)))
 

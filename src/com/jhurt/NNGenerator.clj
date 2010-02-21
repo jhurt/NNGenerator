@@ -18,7 +18,6 @@
   (:require [com.jhurt.ThreadUtils :as ThreadUtils])
   (:require [com.jhurt.CollectionsUtils :as CU])
   (:require [com.jhurt.ga.GA :as GA])
-  (:require [com.jhurt.nn.ActivationFunctions :as Afns])
   (:require [com.jhurt.nn.Common :as Common])
   (:require [com.jhurt.Graph :as Graph]))
 
@@ -34,19 +33,19 @@
 
 (def masterButton (new JButton "Connect Master"))
 
-(def inputMaxLayers (doto (new JTextField 10) (.setText "2")))
+(def inputMaxLayers (doto (new JTextField 10) (.setText "5")))
 (defn getMaxLayers []
   (Integer/parseInt (.getText inputMaxLayers)))
 
-(def inputMaxNodesPerLayer (doto (new JTextField 10) (.setText "5")))
+(def inputMaxNodesPerLayer (doto (new JTextField 10) (.setText "10")))
 (defn getMaxNodesPerLayer []
   (Integer/parseInt (.getText inputMaxNodesPerLayer)))
 
-(def inputMaxTrainingCycles (doto (new JTextField 10) (.setText "10000")))
+(def inputMaxTrainingCycles (doto (new JTextField 10) (.setText "1000")))
 (defn getMaxTrainingCycles []
   (Integer/parseInt (.getText inputMaxTrainingCycles)))
 
-(def inputNumberOfGenerations (doto (new JTextField 10) (.setText "50")))
+(def inputNumberOfGenerations (doto (new JTextField 10) (.setText "10")))
 (defn getNumberOfGenerations []
   (Integer/parseInt (.getText inputNumberOfGenerations)))
 
@@ -220,7 +219,7 @@
     (actionPerformed [e]
       (ThreadUtils/onThread
         (fn [] (doall (map
-          (fn [peerId] (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) Afns/logistic Afns/logisticDerivative)
+          (fn [peerId] (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer))
                              msg {:layers layers :training-cycles (getMaxTrainingCycles) :generation 1}]
             (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
           (getLivePeers)))

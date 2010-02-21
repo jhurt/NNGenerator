@@ -10,7 +10,8 @@
 ;;THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 (ns com.jhurt.ga.GA
-  (:use [com.jhurt.Math :only (randomBounded)]))
+  (:use [com.jhurt.Math :only (randomBounded)])
+  (:require [com.jhurt.nn.ActivationFunctions :as Afns]))
 
 (defn sortTrainResults [trainResults]
   (sort-by :error < trainResults))
@@ -30,14 +31,26 @@
          :activation-fn activationFn :derivative-fn derivFn}))
     layersNN1))
 
+(defn getActivationFns [layer1 layer2]
+  (if (> 0.5 (rand 1)) {:activation-fn (layer1 :activation-fn)
+                        :derivative-fn (layer1 :derivative-fn)}
+    {:activation-fn (layer2 :activation-fn)
+     :derivative-fn (layer2 :derivative-fn)}))
+
 (defn crossover [layersNN1 layersNN2]
   (map
     (fn [ithLayerNN1 ithLayerNN2]
-      (let [activationFn (if (> 0.5 (rand 1)) (ithLayerNN1 :activation-fn) (ithLayerNN2 :activation-fn))
-            derivFn (if (> 0.5 (rand 1)) (ithLayerNN1 :derivative-fn) (ithLayerNN2 :derivative-fn))]
+      (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
         {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
-         :activation-fn activationFn :derivative-fn derivFn}))
+         :activation-fn (activationFns :activation-fn)
+         :derivative-fn (activationFns :activation-fn)}))
     layersNN1 layersNN2))
+;        lastLayerActFn (if (> 0.5 (rand 1))
+;                     ((last layersNN1) :activation-fn)
+;                     ((last layersNN2) :activation-fn))
+;        lastLayer {:number-of-nodes ((last layersNN1) :number-of-nodes)
+;                   :activation-fn lastLayerActFn
+;                   :derivative-fn (Afns/fnToDerivMap lastLayerActFn)}]
 
 (defn breed [trainResults newPopulationSize]
   (let [parents (getBestResults (int (* 0.5 newPopulationSize)) trainResults)]

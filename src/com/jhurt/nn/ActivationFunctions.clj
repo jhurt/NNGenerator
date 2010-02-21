@@ -46,5 +46,6 @@
 ;algebraic sigmoid
 (defn algebraicSigmoid [x] (/ x (Math/sqrt (+ 1.0 (Math/pow x 2.0)))))
 
-
+(def fnToDerivMap
+  {logistic logisticDerivative hyperbolicTangent hyperbolicTangentDerivative})
 

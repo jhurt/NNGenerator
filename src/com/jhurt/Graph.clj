@@ -13,8 +13,7 @@
   (:gen-class)
   (:require [com.jhurt.CollectionsUtils :as CU])
   (:require [com.jhurt.ga.GA :as GA])
-  (:require [com.jhurt.nn.Common :as Common])
-  (:require [com.jhurt.nn.ActivationFunctions :as Afns]))
+  (:require [com.jhurt.nn.Common :as Common]))
 
 (import
   '(javax.swing JFrame)
@@ -161,11 +160,13 @@
 
 (defn -main []
   (let [frame (new JFrame)
-        layers (Common/randomNetworkLayers 5 8 Afns/logistic Afns/logisticDerivative)
+        layers (Common/randomNetworkLayers 5 8)
         inputArity 2
         outputArity 1
         weights (Common/getRandomWeightMatrices layers inputArity outputArity)
         canvas (getNewCanvas weights layers inputArity outputArity)]
+    (println "count weights: " (count weights) " count layers: " (count layers))
+    (println "\n\nlayers: " layers)
     (.. frame (getContentPane) (add canvas))
     (doto frame
       (.setTitle "NN Graph")
