@@ -15,11 +15,9 @@
 ;; R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996, pp 167-171
 
 (ns com.jhurt.nn.BackPropagation
-  (:use [com.jhurt.nn.ActivationFunctions]))
-
-(use 'com.jhurt.Math)
-(use 'com.jhurt.nn.Input)
-(use 'com.jhurt.nn.Common)
+  (:use [com.jhurt.Math])
+  (:use [com.jhurt.nn.Input])
+  (:use [com.jhurt.nn.Common]))
 
 ;learning constant defines step length of correction
 (def gamma 0.3)

@@ -20,11 +20,13 @@
               [testAreListsEqual [] void] [testMultiplyScalar [] void]
               [testArrayLessAnother [] void] [testArrayPlusAnother [] void]
               [testMatrixByVector [] void] [testVectorByMatrix [] void]
-              [testMakeMatrix [] void]
-              ]))
-(use 'com.jhurt.Math)
+              [testMakeMatrix [] void]])
+  (:use [com.jhurt.Math]))
 
 (import '(junit.framework TestCase Assert))
+
+(defn areListsEqual [x y]
+  (reduce (fn [a b] (and a b)) (map = x y)))
 
 (defn -testAreListsEqual [_]
   (Assert/assertTrue (areListsEqual [[1 2 3 4] [5 6 7 8] [9 10 11 12] [13 14 15 16]]

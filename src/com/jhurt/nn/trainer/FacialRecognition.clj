@@ -11,4 +11,4 @@
 
 (ns com.jhurt.nn.trainer.FacialRecognition
   (:require [com.jhurt.nn.ActivationFunctions :as Afns])
-  (:require [com.jhurt.nn.BackPropagationDynamic :as BP]))
+  (:require [com.jhurt.nn.BackPropagation :as BP]))

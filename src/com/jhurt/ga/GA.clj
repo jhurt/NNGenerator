@@ -43,13 +43,13 @@
   the least of layersNN1 and layersNN2"
   [layersNN1 layersNN2]
   (let [newLayers
-        (map
+        (vec (map
           (fn [ithLayerNN1 ithLayerNN2]
             (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
               {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
                :activation-fn (activationFns :activation-fn)
                :derivative-fn (activationFns :activation-fn)}))
-          (butlast layersNN1) (butlast layersNN2))
+          (butlast layersNN1) (butlast layersNN2)))
         activationFns (getActivationFns (last layersNN1) (last layersNN2))
         lastLayer {:number-of-nodes ((last layersNN1) :number-of-nodes)
                    :activation-fn (activationFns :activation-fn)
@@ -64,22 +64,22 @@
         difference (Math/abs (- (count layersNN1) (count layersNN2)))
         numToRemove (- (count largestLayers) difference)
         firstLayers
-        (map
+        (vec (map
           (fn [ithLayerNN1 ithLayerNN2]
             (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
               {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
                :activation-fn (activationFns :activation-fn)
                :derivative-fn (activationFns :activation-fn)}))
-          (butlast layersNN1) (butlast layersNN2))
-        middleLayers (butlast (CU/removeFirstN largestLayers numToRemove)) 
+          layersNN1 layersNN2))
+        middleLayers (butlast (CU/removeFirstN largestLayers numToRemove))
         activationFns (getActivationFns (last layersNN1) (last layersNN2))
         lastLayer {:number-of-nodes ((last layersNN1) :number-of-nodes)
                    :activation-fn (activationFns :activation-fn)
                    :derivative-fn (activationFns :activation-fn)}]
-    (conj (concat firstLayers middleLayers) lastLayer)))
+    (conj (vec (concat firstLayers middleLayers)) lastLayer)))
 
 (defn crossover [layersNN1 layersNN2]
-  (if (> 0.5 (rand 1))
+  (if (or (= (count layersNN1) (count layersNN2)) (> 0.5 (rand 1)))
     (crossover1 layersNN1 layersNN2)
     (crossover2 layersNN1 layersNN2)))
 

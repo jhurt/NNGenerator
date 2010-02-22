@@ -69,7 +69,6 @@
 
 			<arg value="com.jhurt.nn.ActivationFunctions" />
 			<arg value="com.jhurt.nn.BackPropagation" />
-            <arg value="com.jhurt.nn.BackPropagationDynamic" />
             <arg value="com.jhurt.nn.Common" />
 			<arg value="com.jhurt.nn.Clusterer" />
 			<arg value="com.jhurt.nn.FirstPrincipalComponent" />
@@ -90,8 +89,6 @@
             <arg value="com.jhurt.SwingUtils" />
             <arg value="com.jhurt.ThreadUtils" />
             <arg value="com.jhurt.UI" />
-
-
 		</java>
 	</target>
 
@@ -106,6 +103,8 @@
 			</classpath>
 			<sysproperty key="clojure.compile.path" value="${test.bin.dir}" />
 			<arg value="com.jhurt.MathTest" />
+            <arg value="com.jhurt.ga.GATest" />
+            <arg value="com.jhurt.nn.BackPropagationTest" />
 		</java>
 	</target>
 
@@ -124,10 +123,10 @@
 				<include name="nn.jar" />
 			</fileset>
 			<fileset dir="${scripts.dir}/linux">
-				<include name="**/*" />
+				<include name="**/*.sh" />
 			</fileset>
 			<fileset dir="${scripts.dir}/windows">
-				<include name="**/*" />
+				<include name="**/*.bat" />
 			</fileset>
             <fileset dir="${piccolo.lib.dir}" includes="**/*.jar" />
 			<fileset dir="${jxta.lib.dir}" includes="**/*.jar" />
@@ -143,6 +142,8 @@
 			</classpath>
 			<formatter type="plain" />
 			<test name="com.jhurt.MathTest" />
+            <test name="com.jhurt.ga.GATest" />
+            <test name="com.jhurt.nn.BackPropagationTest" />
 		</junit>
 	</target>
 

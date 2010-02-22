@@ -53,9 +53,6 @@
       (matrixSubtract (rest matrixA) (rest matrixB))
       (map - (first matrixA) (first matrixB)))))
 
-(defn areListsEqual [x y]
-  (reduce (fn [a b] (and a b)) (map = x y)))
-
 ;; Vector Functions
 
 (defn transposeVector [v]

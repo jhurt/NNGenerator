@@ -83,8 +83,9 @@
 
 (def generationToResults (ref {}))
 
-(defn breed [generation results]
-  (println "\n\n******* breeding generation: " generation "\n\n")
+(defn breed
+  "breed the generation, this method assumes all results for the generation have been received"
+  [generation results]
   (let [peers (getLivePeers)
         children (GA/breed results (count peers))]
     (loop [p peers c children]
@@ -112,12 +113,11 @@
 (defn checkBreedGeneration
   "check to see if the generation is ready to breed"
   [generation results]
-  (println " " (count results) " results for generation: " generation)
+  (println "received " (count results) " results for generation: " generation)
   (if (= (count (getLivePeers)) (count results))
     (do (removeTrainingGeneration generation)
       (if (= generation (getNumberOfGenerations))
         (do
-          (println "final results: " results)
           (SwingUtils/doOnEdt
             #(do
               (.setValue progressBar generation)
@@ -130,14 +130,15 @@
                 (launchGraphWindow (Graph/getNewCanvas weights layers inputArity outputArity))))))
         ;(.addTab tabbedPane "Training Results" (Graph/getNewCanvas weights layers inputArity))))))
         (do
-          (println "\n\nresults: " results)
           (breed generation results)
           (removeTrainingGeneration generation)
           (SwingUtils/doOnEdt
             #(do
               (.setValue progressBar generation))))))))
 
-(defn addTrainingResult [generation result]
+(defn addTrainingResult
+  "add a new training result to the list, each generation will has its own list of results"
+  [generation result]
   (dosync
     (let [results (@generationToResults generation)]
       (if (seq results)
@@ -156,7 +157,8 @@
     (assoc (sorted-map) (msg :value) (msg :pipeId)))))
   ;keep a map of pipe id to last incoming heartbeat
   (dosync (ref-set pipeIdToLastMessageMap (conj @pipeIdToLastMessageMap
-    (assoc (sorted-map) (msg :pipeId) msg)))))
+    (assoc (sorted-map) (msg :pipeId) msg))))
+  (.fireTableDataChanged tableModel))
 
 (defmethod handleIncomingMessage Jxta/FINISH_TRAIN_XOR_ELEMENT_NAME [msg]
   (let [trainResult (deserialize (msg :value))]
@@ -165,13 +167,13 @@
         (if-not (nil? generation)
           (addTrainingResult generation trainResult))))))
 
-;fired whenever a slave sends the master a message
-(defn messageInCallback [messages]
+(defn messageInCallback
+  "fired whenever a slave sends the master a message"
+  [messages]
   (loop [msgs messages]
     (if (seq msgs)
       (do
         (handleIncomingMessage (first msgs))
-        (.fireTableDataChanged tableModel)
         (recur (rest msgs))))))
 
 ;forward declaration
