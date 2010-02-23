@@ -102,8 +102,7 @@
 
 (defn trainNetwork
   "Train the network with the given inputs/outputs and initial weight set.
-   Training terminates when either the error of the network is less than the
-   desired RMS error or when there are no more training samples"
+   Training terminates when there are no more training samples"
   [layers inputs outputs weights]
   (loop [inputs inputs
          outputs outputs
@@ -113,8 +112,7 @@
       (let [input (first inputs)
             output (first outputs)
             ;feed-forward step
-            nodeValues
-            (calculateNodeValues layers input weights)
+            nodeValues (calculateNodeValues layers input weights)
             ;backpropagation step
             errors (calculateNodeErrors nodeValues weights output)
             ;calculate weight deltas

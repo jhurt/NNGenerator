@@ -31,10 +31,10 @@
                    :layers layers}]
     (trainStructure structure generation callback)))
 
-(def layer1 (vector {:number-of-nodes 3 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
+(def layer1 (vector {:number-of-nodes 5 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
           {:number-of-nodes 1 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}))
 
-(def layer2 (vector {:number-of-nodes 3 :activation-fn logistic :derivative-fn logisticDerivative}
+(def layer2 (vector {:number-of-nodes 5 :activation-fn logistic :derivative-fn logisticDerivative}
           {:number-of-nodes 1 :activation-fn logistic :derivative-fn logisticDerivative}))
 
 (defn testXOR1 [numCycles]
