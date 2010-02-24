@@ -127,7 +127,9 @@
                     weights (child :weights)
                     inputArity 2
                     outputArity 1]
-                (launchGraphWindow (Graph/getNewCanvas weights layers inputArity outputArity))))))
+                (do
+                  (println "resultant nn: " child)
+                  (launchGraphWindow (Graph/getNewCanvas weights layers inputArity outputArity)))))))
         ;(.addTab tabbedPane "Training Results" (Graph/getNewCanvas weights layers inputArity))))))
         (do
           (breed generation results)

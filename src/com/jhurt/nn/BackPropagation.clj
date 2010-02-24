@@ -100,28 +100,33 @@
             delta (multiplyScalar (makeMatrix i (first e)) gamma)]
         (recur (rest l) (rest e) (conj deltas delta))))))
 
+(defn getAverageRmsError [inputToErrorMap]
+  (/ (reduce + (vals inputToErrorMap)) (count inputToErrorMap)))
+
 (defn trainNetwork
-  "Train the network with the given inputs/outputs and initial weight set.
-   Training terminates when there are no more training samples"
-  [layers inputs outputs weights]
-  (loop [inputs inputs
-         outputs outputs
+  "Train the network with the given input/output map and initial weight set
+   for the desired # of cycles. Input/output pairs are selected randomly at
+   each iteration"
+  [cycles layers ioMap weights inputToErrorMap]
+  (loop [n cycles
          weights weights
-         rmsError 1.0]
-    (if (and (seq inputs) (seq outputs))
-      (let [input (first inputs)
-            output (first outputs)
+         inputToErrorMap inputToErrorMap]
+    (if (> n 0)
+      (let [input (nth (keys ioMap) (randomBounded -1 (dec (count ioMap))))
+            output (ioMap input)
             ;feed-forward step
             nodeValues (calculateNodeValues layers input weights)
             ;backpropagation step
             errors (calculateNodeErrors nodeValues weights output)
             ;calculate weight deltas
-            deltas (getWeightDeltas input (nodeValues :nodeOutputs) errors)]
+            deltas (getWeightDeltas input (nodeValues :nodeOutputs) errors)
+            ;get rms error
+            rmsError (calculateRmsError (first errors))]
+        (do (println "input: " input)
         ;update weights and recurse step
-        (recur (rest inputs) (rest outputs)
-          (map matrixSubtract weights deltas) (calculateRmsError (first errors))))
-      {:rms-error rmsError :weights weights})))
+        (recur (dec n) (map matrixSubtract weights deltas) (assoc inputToErrorMap input rmsError))))
+      {:rms-error (getAverageRmsError inputToErrorMap) :weights weights})))
 
-(defn train [structure weights]
-  (trainNetwork (structure :layers) (structure :inputs) (structure :outputs)
-    weights))
+(defn train [cycles layers ioMap weights]
+  (let [inputToErrorMap (zipmap (keys ioMap) (take (count ioMap) (cycle [1.0])))]
+    (trainNetwork cycles layers ioMap weights inputToErrorMap)))

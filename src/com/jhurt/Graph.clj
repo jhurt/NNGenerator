@@ -109,8 +109,8 @@
             edge)))))))
 
 (defn drawWeights [edgeLayer edges weights]
+  (println "count edges: " (count edges) " count weights: " (count weights))
   (loop [e (CU/flatten edges) w (CU/flatten weights)]
-    (println "count edges: " (count e) " count weights: " (count w))
     (if (and (seq e) (seq w))
       (do
         (let [edge (first e)

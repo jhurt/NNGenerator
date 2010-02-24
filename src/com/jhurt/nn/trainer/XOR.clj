@@ -20,16 +20,10 @@
                 [1 -1] [1]
                 [1 1] [-1]})
 
-(defn trainStructure [structure generation callback]
-  (let [weights (getRandomWeightMatrices (structure :layers) 2 1)
-        result (BP/train structure weights)]
-    (callback (result :weights) (result :rms-error) generation (structure :layers))))
-
-(defn train [layers numberOfDatum generation callback]
-  (let [structure {:inputs (take numberOfDatum (cycle (keys XOR-table)))
-                   :outputs (take numberOfDatum (cycle (vals XOR-table)))
-                   :layers layers}]
-    (trainStructure structure generation callback)))
+(defn train [layers numCycles generation callback]
+  (let [weights (getRandomWeightMatrices layers 2 1)
+        result (BP/train numCycles layers XOR-table weights)]
+    (callback (result :weights) (result :rms-error) generation layers)))
 
 (def layer1 (vector {:number-of-nodes 5 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
           {:number-of-nodes 1 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}))
@@ -39,17 +33,13 @@
 
 (defn testXOR1 [numCycles]
   (let [layers layer1
-        inputs (take numCycles (cycle (keys XOR-table)))
-        outputs (take numCycles (cycle (vals XOR-table)))
         weights (getRandomWeightMatrices layers 2 1)]
-    (BP/train {:layers layers :inputs inputs :outputs outputs} weights)))
+    (BP/train numCycles layers XOR-table weights)))
 
 (defn testXOR2 [numCycles]
   (let [layers layer2
-        inputs (take numCycles (cycle (keys XOR-table)))
-        outputs (take numCycles (cycle (vals XOR-table)))
         weights (getRandomWeightMatrices layers 2 1)]
-    (BP/train {:layers layers :inputs inputs :outputs outputs} weights)))
+    (BP/train numCycles layers XOR-table weights)))
 
 (defn classifyInput [layers input weights]
   (BP/calculateOutput layers input weights))
