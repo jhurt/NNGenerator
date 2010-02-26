@@ -12,7 +12,9 @@
 ;; an implementation of the perceptron convergence algorithm as
 ;; described in R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996, pp 85
 
-(ns com.jhurt.nn.PerceptronRojas)
+(ns
+  #^{:author "Jason Lee Hurt"}
+  com.jhurt.nn.PerceptronRojas)
 (use 'com.jhurt.Math)
 (use 'com.jhurt.nn.Input)
 

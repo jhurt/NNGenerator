@@ -14,7 +14,9 @@
 ;; Loosely based on back propagation algorithm described in
 ;; R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996, pp 167-171
 
-(ns com.jhurt.nn.BackPropagation
+(ns
+  #^{:author "Jason Lee Hurt"}
+  com.jhurt.nn.BackPropagation
   (:use [com.jhurt.Math])
   (:use [com.jhurt.nn.Input])
   (:use [com.jhurt.nn.Common]))

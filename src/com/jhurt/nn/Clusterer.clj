@@ -12,7 +12,9 @@
 ;; an implementation of a competetive learning clustering algorithm as
 ;; described in R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996, pp 104-105
 
-(ns com.jhurt.nn.Clusterer)
+(ns
+  #^{:author "Jason Lee Hurt"}
+  com.jhurt.nn.Clusterer)
 (use 'com.jhurt.Math)
 
 ;update the closest weight vector m by:

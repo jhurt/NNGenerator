@@ -12,7 +12,9 @@
 ;; based on BackPropagation.clj, these functions support training
 ;; a NN given an arbitrary network structure
 
-(ns com.jhurt.nn.BackPropagationDynamic)
+(ns
+  #^{:author "Jason Lee Hurt"}
+  com.jhurt.nn.BackPropagationDynamic)
 
 (use 'com.jhurt.Math)
 (use 'com.jhurt.nn.Input)

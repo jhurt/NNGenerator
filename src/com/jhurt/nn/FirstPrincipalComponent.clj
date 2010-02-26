@@ -13,7 +13,9 @@
 ;; of empirical data
 ;; as described in R. Rojas: Neural Networks, Springer-Verlag, Berlin, 1996, pp 116
 
-(ns com.jhurt.nn.FirstPrincipalComponent)
+(ns
+  #^{:author "Jason Lee Hurt"}
+  com.jhurt.nn.FirstPrincipalComponent)
 
 (use 'com.jhurt.Math)
 

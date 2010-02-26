@@ -12,7 +12,9 @@
 ;; an implementation of the perceptron convergence algorithm as described in:
 ;; S. Haykin: Neural Networks: A Comprehensive Foundation, Prentice Hall, 1999, pp 142-143
 
-(ns com.jhurt.nn.PerceptronHaykin)
+(ns
+  #^{:author "Jason Lee Hurt"}
+  com.jhurt.nn.PerceptronHaykin)
 (use 'com.jhurt.Math)
 (use 'com.jhurt.nn.ActivationFunctions)
 (use 'com.jhurt.nn.Input)
