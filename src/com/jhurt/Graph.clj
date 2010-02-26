@@ -143,24 +143,12 @@
       (.setVisible canvas true))
     canvas))
 
-;(defn -main []
-;  (let [frame (new JFrame)
-;        weights [[[1.1239125098872669 -3.599903081624636 2.3333333]
-;                  [-0.6927869275859633 3.751123516794292 2.3333333]
-;                  [-0.23056227969902052 3.3794881155733525 2.3333333]]
-;                 [[1.1239125098872669 -3.599903081624636 2.3333333]
-;                                   [-0.6927869275859633 3.751123516794292 2.3333333]
-;                                   [-0.23056227969902052 3.3794881155733525 2.3333333]]
-;                 [[1.6586619486262897] [-8.884370688215798] [1.5670473521919515]]]
-;        nnLayers (list {:number-of-nodes 3 :activation-fn Afns/logistic :derivative-fn Afns/logisticDerivative}
-;        {:number-of-nodes 3 :activation-fn Afns/logistic :derivative-fn Afns/logisticDerivative})
-;        canvas (getNewCanvas weights nnLayers 3)]
-;    (.. frame (getContentPane) (add canvas))
-;    (doto frame
-;      (.setTitle "NN Graph")
-;      (.setSize 800 600)
-;      (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
-;      (.setVisible true))))
+(defn getTestCanvas []
+  (let [inputArity 2
+        outputArity 1
+        layers (Common/randomNetworkLayers 4 5 outputArity)
+        weights (Common/getRandomWeightMatrices layers inputArity outputArity)]
+    (getNewCanvas weights layers inputArity outputArity)))
 
 (defn -main []
   (let [frame (new JFrame)

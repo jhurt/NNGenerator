@@ -104,13 +104,28 @@
     (if-not (nil? results)
       (dosync (ref-set generationToResults (dissoc @generationToResults generation))))))
 
-(defn launchGraphWindow [canvas]
-  (let [frame (new JFrame)]
-    (.. frame (getContentPane) (add canvas))
+(defn launchGraphWindow [canvas rmsError]
+  (let [frame (new JFrame)
+        panel
+        (doto (new JPanel)
+          (.setLayout (new BorderLayout))
+          (.setBackground Color/WHITE)
+          (.add (doto (new JPanel)
+            (.setBackground Color/WHITE)
+            (.add (new JButton "Save"))) BorderLayout/NORTH)
+          (.add canvas BorderLayout/CENTER))]
     (doto frame
-      (.setTitle "Resultant NN")
+      (.add panel)
+      (.setTitle (str "Resultant Neural Network - Training RMS Error: " rmsError))
+      (.pack)
       (.setSize 800 600)
       (.setVisible true))))
+
+;(defn testLaunchGraphWindow []
+;  (let [canvas (Graph/getTestCanvas)
+;        rmsError 0.4]
+;    (launchGraphWindow canvas rmsError)))
+
 
 (defn checkBreedGeneration
   "check to see if the generation is ready to breed"
@@ -131,7 +146,7 @@
                     outputArity 1]
                 (do
                   (println "resultant nn: " child)
-                  (launchGraphWindow (Graph/getNewCanvas weights layers inputArity outputArity)))))))
+                  (launchGraphWindow (Graph/getNewCanvas weights layers inputArity outputArity) (child :error)))))))
         ;(.addTab tabbedPane "Training Results" (Graph/getNewCanvas weights layers inputArity))))))
         (do
           (breed generation results)
@@ -236,7 +251,7 @@
               (.setValue progressBar 0)
               (.setVisible progressBar true))))))))))
 
-(def menuItemGenerateFacialRecognition (doto (new JMenuItem "Generate Facial Recoginition NN")
+(def menuItemGenerateFacialRecognition (doto (new JMenuItem "Generate Facial Recognition NN")
   (.addActionListener (proxy [ActionListener] []
     (actionPerformed [e] ;TODO
       )))))
@@ -320,3 +335,6 @@
       (.setDefaultCloseOperation (JFrame/EXIT_ON_CLOSE))
       (.setJMenuBar menuBar)
       (.setVisible true))))
+
+;(defn -main []
+;  (testLaunchGraphWindow))
