@@ -20,7 +20,7 @@
   (:use [com.jhurt.nn.Common]))
 
 ;learning constant defines step length of correction
-(def gamma 0.3)
+(def gamma 0.5)
 
 (defn calculateOutput
   "Get the output of the network for a single input"
@@ -100,8 +100,10 @@
             delta (multiplyScalar (makeMatrix i (first e)) gamma)]
         (recur (rest l) (rest e) (conj deltas delta))))))
 
-(defn getAverageRmsError [inputToErrorMap]
-  (/ (reduce + (vals inputToErrorMap)) (count inputToErrorMap)))
+(defn getTotalRmsError
+  "return the total of all rms errors for each input of the inputToErrorMap"
+  [inputToErrorMap]
+  (reduce + (vals inputToErrorMap)))
 
 (defn trainNetwork
   "Train the network with the given input/output map and initial weight set
@@ -122,10 +124,9 @@
             deltas (getWeightDeltas input (nodeValues :nodeOutputs) errors)
             ;get rms error
             rmsError (calculateRmsError (first errors))]
-        (do (println "input: " input)
         ;update weights and recurse step
-        (recur (dec n) (map matrixSubtract weights deltas) (assoc inputToErrorMap input rmsError))))
-      {:rms-error (getAverageRmsError inputToErrorMap) :weights weights})))
+        (recur (dec n) (map matrixSubtract weights deltas) (assoc inputToErrorMap input rmsError)))
+      {:rms-error (getTotalRmsError inputToErrorMap) :weights weights})))
 
 (defn train [cycles layers ioMap weights]
   (let [inputToErrorMap (zipmap (keys ioMap) (take (count ioMap) (cycle [1.0])))]
