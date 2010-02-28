@@ -24,11 +24,13 @@
   (:require [com.jhurt.Graph :as Graph]))
 
 (import
-  '(javax.swing JButton JFrame JLabel JMenu JMenuBar JMenuItem JPanel JProgressBar JScrollPane JSplitPane JTabbedPane JTable JTextField)
+  '(javax.swing JButton JFileChooser JFrame JLabel JMenu JMenuBar JMenuItem JOptionPane JPanel JProgressBar JScrollPane JSplitPane JTabbedPane JTable JTextField)
+  '(javax.swing.filechooser FileFilter)
   '(javax.swing.table AbstractTableModel)
   '(java.awt Color BorderLayout GridBagConstraints GridBagLayout Insets)
   '(java.awt.event ActionListener)
-  '(java.util Date))
+  '(java.util Date)
+  '(java.io File FileWriter))
 
 (def peerIdToPipeIdMap (ref (sorted-map)))
 (def pipeIdToLastMessageMap (ref (sorted-map)))
@@ -76,6 +78,10 @@
           (== 2 columnIndex) (msg :value)
           (== 3 columnIndex) (str (new Date (msg :time)))
           (== 4 columnIndex) pipeId))))))
+          
+(def fileFilterNN (proxy [FileFilter] []
+	(accept [f] (or (.isDirectory f) (.endsWith (.getName f) "nn")))
+	(getDescription [] "Neural Network Files")))
 
 (defn getLivePeers
   "return a list of peers to which the master is currently connected"
@@ -104,7 +110,26 @@
     (if-not (nil? results)
       (dosync (ref-set generationToResults (dissoc @generationToResults generation))))))
 
-(defn launchGraphWindow [canvas rmsError]
+(defn getSaveNetworkButton 
+	"return a new save network button, nn is the network to save, c is the 
+	 Swing component to attach the file chooser to"
+	[nn c]
+	(doto (new JButton "Save")
+	 (.addActionListener 
+	 	(proxy [ActionListener] []
+    	(actionPerformed [e]       
+    		(ThreadUtils/onThread
+        	(fn []
+        		(let [fileChooser (doto (new JFileChooser) (.setFileFilter fileFilterNN))]
+        			(if (= JFileChooser/APPROVE_OPTION (.showSaveDialog fileChooser c))
+        			(do
+        			 (let [saveFile (new File (str (.getAbsolutePath (.getSelectedFile fileChooser)) ".nn"))
+        			 			 writer (new FileWriter saveFile)]
+        			 			 (doto writer (.write (serialize nn)) (.flush) (.close))
+        			 			 (SwingUtils/doOnEdt
+        			 			 #((JOptionPane/showMessageDialog c "Successfully Saved"))))))))))))))
+
+(defn launchGraphWindow [canvas saveButton rmsError]
   (let [frame (new JFrame)
         panel
         (doto (new JPanel)
@@ -112,7 +137,7 @@
           (.setBackground Color/WHITE)
           (.add (doto (new JPanel)
             (.setBackground Color/WHITE)
-            (.add (new JButton "Save"))) BorderLayout/NORTH)
+            (.add saveButton)) BorderLayout/NORTH)
           (.add canvas BorderLayout/CENTER))]
     (doto frame
       (.add panel)
@@ -143,10 +168,12 @@
                     layers (child :layers)
                     weights (child :weights)
                     inputArity 2
-                    outputArity 1]
+                    outputArity 1
+                    canvas (Graph/getNewCanvas weights layers inputArity outputArity)
+                    saveNetworkButton (getSaveNetworkButton child canvas)]
                 (do
                   (println "resultant nn: " child)
-                  (launchGraphWindow (Graph/getNewCanvas weights layers inputArity outputArity) (child :error)))))))
+                  (launchGraphWindow canvas saveNetworkButton (child :error)))))))
         ;(.addTab tabbedPane "Training Results" (Graph/getNewCanvas weights layers inputArity))))))
         (do
           (breed generation results)
