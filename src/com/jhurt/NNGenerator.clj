@@ -78,10 +78,10 @@
           (== 2 columnIndex) (msg :value)
           (== 3 columnIndex) (str (new Date (msg :time)))
           (== 4 columnIndex) pipeId))))))
-          
+
 (def fileFilterNN (proxy [FileFilter] []
-	(accept [f] (or (.isDirectory f) (.endsWith (.getName f) "nn")))
-	(getDescription [] "Neural Network Files")))
+  (accept [f] (or (.isDirectory f) (.endsWith (.getName f) "nn")))
+  (getDescription [] "Neural Network Files")))
 
 (defn getLivePeers
   "return a list of peers to which the master is currently connected"
@@ -110,24 +110,24 @@
     (if-not (nil? results)
       (dosync (ref-set generationToResults (dissoc @generationToResults generation))))))
 
-(defn getSaveNetworkButton 
-	"return a new save network button, nn is the network to save, c is the 
-	 Swing component to attach the file chooser to"
-	[nn c]
-	(doto (new JButton "Save")
-	 (.addActionListener 
-	 	(proxy [ActionListener] []
-    	(actionPerformed [e]       
-    		(ThreadUtils/onThread
-        	(fn []
-        		(let [fileChooser (doto (new JFileChooser) (.setFileFilter fileFilterNN))]
-        			(if (= JFileChooser/APPROVE_OPTION (.showSaveDialog fileChooser c))
-        			(do
-        			 (let [saveFile (new File (str (.getAbsolutePath (.getSelectedFile fileChooser)) ".nn"))
-        			 			 writer (new FileWriter saveFile)]
-        			 			 (doto writer (.write (serialize nn)) (.flush) (.close))
-        			 			 (SwingUtils/doOnEdt
-        			 			 #((JOptionPane/showMessageDialog c "Successfully Saved"))))))))))))))
+(defn getSaveNetworkButton
+  "return a new save network button, nn is the network to save, c is the
+    Swing component to attach the file chooser to"
+  [nn c]
+  (doto (new JButton "Save")
+    (.addActionListener
+      (proxy [ActionListener] []
+        (actionPerformed [e]
+          (ThreadUtils/onThread
+            (fn []
+              (let [fileChooser (doto (new JFileChooser) (.setFileFilter fileFilterNN))]
+                (if (= JFileChooser/APPROVE_OPTION (.showSaveDialog fileChooser c))
+                  (do
+                    (let [saveFile (new File (str (.getAbsolutePath (.getSelectedFile fileChooser)) ".nn"))
+                          writer (new FileWriter saveFile)]
+                      (doto writer (.write (serialize nn)) (.flush) (.close))
+                      (SwingUtils/doOnEdt
+                        #((JOptionPane/showMessageDialog c "Successfully Saved!"))))))))))))))
 
 (defn launchGraphWindow [canvas saveButton rmsError]
   (let [frame (new JFrame)

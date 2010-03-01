@@ -22,7 +22,10 @@
   (:use [com.jhurt.nn.Common]))
 
 ;learning constant defines step length of correction
-(def gamma 0.5)
+(def gamma -0.9)
+
+;momentum factor for help in preventing oscillation during learning
+(def alpha 0.3)
 
 (defn calculateOutput
   "Get the output of the network for a single input"
@@ -114,6 +117,7 @@
   [cycles layers ioMap weights inputToErrorMap]
   (loop [n cycles
          weights weights
+         previousDeltas nil
          inputToErrorMap inputToErrorMap]
     (if (> n 0)
       (let [input (nth (keys ioMap) (randomBounded -1 (dec (count ioMap))))
@@ -124,10 +128,16 @@
             errors (calculateNodeErrors nodeValues weights output)
             ;calculate weight deltas
             deltas (getWeightDeltas input (nodeValues :nodeOutputs) errors)
+            deltasWithMomentum (if (nil? previousDeltas)
+              deltas
+              (map matrixAdd deltas (multiplyScalar previousDeltas alpha)))
             ;get rms error
             rmsError (calculateRmsError (first errors))]
         ;update weights and recurse step
-        (recur (dec n) (map matrixSubtract weights deltas) (assoc inputToErrorMap input rmsError)))
+        (recur (dec n)
+          (map matrixAdd weights deltasWithMomentum)
+          deltasWithMomentum
+          (assoc inputToErrorMap input rmsError)))
       {:rms-error (getTotalRmsError inputToErrorMap) :weights weights})))
 
 (defn train [cycles layers ioMap weights]

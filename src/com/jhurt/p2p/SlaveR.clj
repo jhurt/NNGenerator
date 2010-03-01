@@ -85,7 +85,7 @@
         (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement))]
     (.sendMessage pipe msg)))
 
-;loop as long as a pipe is available, sending a heartbeat message every 3 minutes
+;loop as long as a pipe is available, sending a heartbeat message every 2 minutes
 (defn heartbeat []
   (ThreadUtils/onThread
     #(while (and (not (nil? @pipe)) (.isBound @pipe))
@@ -93,7 +93,7 @@
         (try
           (sendHeartbeat @pipe)
           (catch IOException ioe (dosync ref-set pipe nil)))
-        (Thread/sleep 180000)))))
+        (Thread/sleep 120000)))))
 
 ;look for a pipe adv from a seq of advertisements
 ;for the first one that is found, a bidirectional pipe

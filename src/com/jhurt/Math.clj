@@ -121,6 +121,11 @@
 
 (defmulti multiplyScalar getArity)
 
+(defmethod multiplyScalar 3 [x scalar]
+  (loop [x x
+         r []]
+    (if-not (seq x) r (recur (rest x) (conj r (multiplyScalar (first x) scalar))))))
+
 (defmethod multiplyScalar 2 [matrixA scalar]
   (if (seq matrixA)
     (conj
