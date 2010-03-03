@@ -122,6 +122,7 @@
       (.save))))
 
 (defn start [messageInCallback]
+  (Jxta/clearLocalCache)
   (dosync (ref-set callback messageInCallback))
   (configureMasterNode)
   (.startNetwork manager)

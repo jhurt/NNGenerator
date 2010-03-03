@@ -27,9 +27,9 @@
 
 (defstruct InputMessage :pipeId :name :value :time)
 
-;(def RDV_URI "tcp://70.180.196.124:9701")
+(def RDV_URI "tcp://70.180.196.124:9701")
 ;(def RDV_URI "tcp://192.168.0.196:9701")
-(def RDV_URI "tcp://127.0.0.1:9701")
+;(def RDV_URI "tcp://127.0.0.1:9701")
 
 (def NETWORK_NAME "NNGeneratorNetwork")
 
@@ -71,3 +71,7 @@
     (while (not (.isConnectedToRendezVous rdvService))
       (println "waiting for rendezvous connection")
       (Thread/sleep 5000))))
+
+(defn clearLocalCache []
+  (let [f (new File JXTA_HOME)]
+    (do (if (and (not (nil? f)) (.exists f)) (.delete f)))))

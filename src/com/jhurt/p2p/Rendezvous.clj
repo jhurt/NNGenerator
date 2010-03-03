@@ -56,6 +56,7 @@
       (.save))))
 
 (defn -main []
+  (Jxta/clearLocalCache)
   (configureRdvNode)
   (.startNetwork manager)
   (let [netPeerGroup (.getNetPeerGroup manager)

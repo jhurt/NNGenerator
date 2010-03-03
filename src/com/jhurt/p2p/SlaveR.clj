@@ -142,6 +142,7 @@
       (.save))))
 
 (defn -main []
+  (Jxta/clearLocalCache)
   (configureSlaveNode)
   (.startNetwork manager)
   (println "*************************starting slave node*************************\n")
