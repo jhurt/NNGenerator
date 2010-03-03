@@ -47,3 +47,15 @@
             (conj layers {:number-of-nodes (randomPositive maxNodesPerLayer)
                           :activation-fn activationFn
                           :derivative-fn derivFn})))))))
+
+(defn randomAlpha
+  "return a random value for the momentum factor for help in preventing oscillation during learning"
+  []
+  (let [x (rand 1)]
+    (if (< x 0.1) 0.1 x)))
+
+(defn randomGamma
+  "return a random value for the learning constant that defines step length of correction"
+  []
+  (let [x (* -1.0 (rand 1))]
+    (if (> x -0.1) -0.1 x)))

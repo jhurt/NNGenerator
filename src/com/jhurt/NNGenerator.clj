@@ -24,7 +24,7 @@
   (:require [com.jhurt.Graph :as Graph]))
 
 (import
-  '(javax.swing JButton JFileChooser JFrame JLabel JMenu JMenuBar JMenuItem JOptionPane JPanel JProgressBar JScrollPane JSplitPane JTabbedPane JTable JTextField)
+  '(javax.swing JButton JFileChooser JFrame JLabel JMenu JMenuBar JMenuItem JOptionPane JPanel JProgressBar JScrollPane JSplitPane JTable JTextField)
   '(javax.swing.filechooser FileFilter)
   '(javax.swing.table AbstractTableModel)
   '(java.awt Color BorderLayout GridBagConstraints GridBagLayout Insets)
@@ -55,7 +55,7 @@
 
 (def progressBar (doto (new JProgressBar 0) (.setValue 0) (.setStringPainted true)))
 
-(declare tabbedPane)
+(def connectedSlavesLabel (new JLabel "# Of Connected Peers: "))
 
 (def generateXorMenuItem (new JMenuItem "Generate XOR NN"))
 
@@ -80,7 +80,7 @@
           (== 4 columnIndex) pipeId))))))
 
 (def fileFilterNN (proxy [FileFilter] []
-  (accept [f] (or (.isDirectory f) (.endsWith (.getName f) "nn")))
+  (accept [f] (or (.isDirectory f) (.endsWith (.getName f) ".nn")))
   (getDescription [] "Neural Network Files")))
 
 (defn getLivePeers
@@ -100,8 +100,8 @@
       (if (and (seq p) (seq c))
         (let [peerId (first p)
               child (first c)
-              msg {:layers child :training-cycles (getMaxTrainingCycles)
-                   :generation (inc generation)}]
+              msg {:layers (child :layers) :training-cycles (getMaxTrainingCycles)
+                   :generation (inc generation) :alpha (child :alpha) :gamma (child :gamma)}]
           (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))
           (recur (rest p) (rest c)))))))
 
@@ -146,12 +146,6 @@
       (.setSize 800 600)
       (.setVisible true))))
 
-;(defn testLaunchGraphWindow []
-;  (let [canvas (Graph/getTestCanvas)
-;        rmsError 0.4]
-;    (launchGraphWindow canvas rmsError)))
-
-
 (defn checkBreedGeneration
   "check to see if the generation is ready to breed"
   [generation results]
@@ -174,7 +168,6 @@
                 (do
                   (println "resultant nn: " child)
                   (launchGraphWindow canvas saveNetworkButton (child :error)))))))
-        ;(.addTab tabbedPane "Training Results" (Graph/getNewCanvas weights layers inputArity))))))
         (do
           (breed generation results)
           (removeTrainingGeneration generation)
@@ -183,7 +176,7 @@
               (.setValue progressBar generation))))))))
 
 (defn addTrainingResult
-  "add a new training result to the list, each generation will has its own list of results"
+  "add a new training result to the list, each generation will have its own list of results"
   [generation result]
   (dosync
     (let [results (@generationToResults generation)]
@@ -204,7 +197,11 @@
   ;keep a map of pipe id to last incoming heartbeat
   (dosync (ref-set pipeIdToLastMessageMap (conj @pipeIdToLastMessageMap
     (assoc (sorted-map) (msg :pipeId) msg))))
-  (.fireTableDataChanged tableModel))
+  ;fire a table data change event
+  (.fireTableDataChanged tableModel)
+  ;update the number of connected peers
+  (SwingUtils/doOnEdt
+    #(do (.setText connectedSlavesLabel (str "# Of Connected Peers: " (count @peerIdToPipeIdMap))))))
 
 (defmethod handleIncomingMessage Jxta/FINISH_TRAIN_XOR_ELEMENT_NAME [msg]
   (let [trainResult (deserialize (msg :value))]
@@ -269,9 +266,13 @@
       (ThreadUtils/onThread
         (fn [] (doall (map
           (fn [peerId] (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) 1)
-                             msg {:layers layers :training-cycles (getMaxTrainingCycles) :generation 1}]
+                             alpha (Common/randomAlpha)
+                             gamma (Common/randomGamma)
+                             msg {:layers layers :training-cycles (getMaxTrainingCycles) :generation 1
+                                  :alpha alpha :gamma gamma}]
             (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
           (getLivePeers)))
+          (dosync (ref-set generationToResults {}))
           (SwingUtils/doOnEdt
             #(do (.setEnabled generateXorMenuItem false)
               (.setMaximum progressBar (getNumberOfGenerations))
@@ -341,14 +342,17 @@
   (.setLayout (new BorderLayout))
   (.add topLeftPanel BorderLayout/NORTH)))
 
-(def nodeTable (doto (new JTable) (.setModel tableModel)))
+(def tableScrollPane (new JScrollPane (doto (new JTable) (.setModel tableModel))))
 
-(def tableScrollPane (new JScrollPane nodeTable))
+(def slavesPanel (doto (new JPanel) (.setLayout (new BorderLayout)) (.add connectedSlavesLabel BorderLayout/WEST)))
 
-(def tabbedPane (doto (new JTabbedPane)
-  (.addTab "Slaves" tableScrollPane)))
+(def rightPanel (doto (new JPanel)
+  (.setLayout (new BorderLayout))
+  (.setBackground Color/WHITE)
+  (.add tableScrollPane)
+  (.add slavesPanel BorderLayout/SOUTH)))
 
-(def splitPane (doto (new JSplitPane JSplitPane/HORIZONTAL_SPLIT leftPanel tableScrollPane)
+(def splitPane (doto (new JSplitPane JSplitPane/HORIZONTAL_SPLIT leftPanel rightPanel)
   (.setContinuousLayout true)
   (.setOneTouchExpandable true)
   (.setDividerLocation 0.85)))
@@ -364,4 +368,6 @@
       (.setVisible true))))
 
 ;(defn -main []
-;  (testLaunchGraphWindow))
+;  (let [canvas (Graph/getTestCanvas)
+;          rmsError 0.4]
+;      (launchGraphWindow canvas (new JButton "Save") rmsError)))

@@ -22,10 +22,12 @@
                 [1 -1] [1]
                 [1 1] [-1]})
 
-(defn train [layers numCycles generation callback]
+(defn train
+  "train a NN with data from an XOR truth table"
+  [layers numCycles generation alpha gamma callback]
   (let [weights (getRandomWeightMatrices layers 2 1)
-        result (BP/train numCycles layers XOR-table weights)]
-    (callback (result :weights) (result :rms-error) generation layers)))
+        result (BP/train numCycles layers XOR-table weights alpha gamma)]
+    (callback (result :weights) (result :rms-error) generation layers alpha gamma)))
 
 (def layer1 (vector {:number-of-nodes 5 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
           {:number-of-nodes 1 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}))
@@ -36,12 +38,12 @@
 (defn testXOR1 [numCycles]
   (let [layers layer1
         weights (getRandomWeightMatrices layers 2 1)]
-    (BP/train numCycles layers XOR-table weights)))
+    (BP/train numCycles layers XOR-table 0.1 -0.9 weights)))
 
 (defn testXOR2 [numCycles]
   (let [layers layer2
         weights (getRandomWeightMatrices layers 2 1)]
-    (BP/train numCycles layers XOR-table weights)))
+    (BP/train numCycles layers XOR-table 0.1 -0.9 weights)))
 
 (defn classifyInput [layers input weights]
   (BP/calculateOutput layers input weights))

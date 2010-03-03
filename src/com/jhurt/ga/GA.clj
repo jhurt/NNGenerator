@@ -80,10 +80,23 @@
                    :derivative-fn (activationFns :activation-fn)}]
     (conj (vec (concat firstLayers middleLayers)) lastLayer)))
 
-(defn crossover [layersNN1 layersNN2]
+(defn crossoverLayers [layersNN1 layersNN2]
   (if (or (= (count layersNN1) (count layersNN2)) (> 0.5 (rand 1)))
     (crossover1 layersNN1 layersNN2)
     (crossover2 layersNN1 layersNN2)))
+
+(defn crossoverConstant [c1 c2]
+  (let [x (rand 1)]
+    (if (< x 0.333333) c1
+      (if (< x 0.6666667) c2 (/ (+ c1 c2) 2.0)))))
+
+(defn getChild
+  "get a new child based on 2 parents"
+  [p1 p2]
+  (let [layers (crossoverLayers (p1 :layers) (p2 :layers))
+        alpha (crossoverConstant (p1 :alpha) (p2 :alpha))
+        gamma (crossoverConstant (p1 :gamma) (p2 :gamma))]
+    {:layers layers :alpha alpha :gamma gamma}))
 
 (defn breed [trainResults newPopulationSize]
   (let [parents (getBestResults (int (* 0.5 newPopulationSize)) trainResults)]
@@ -92,11 +105,12 @@
       (if (or (not (seq p)) (< (count p) 4))
         children
         (recur (rest (rest (rest (rest p))))
-          (conj children (crossover ((nth p 0) :layers) ((nth p 1) :layers))
-            (crossover ((nth p 0) :layers) ((nth p 2) :layers))
-            (crossover ((nth p 0) :layers) ((nth p 3) :layers))
-            (crossover ((nth p 1) :layers) ((nth p 2) :layers))
-            (crossover ((nth p 1) :layers) ((nth p 3) :layers))
-            (crossover ((nth p 2) :layers) ((nth p 3) :layers))
-            (crossover ((nth p 0) :layers) ((nth p 1) :layers))
-            (crossover ((nth p 0) :layers) ((nth p 1) :layers))))))))
+          (conj children
+            (getChild (nth p 0) (nth p 1))
+            (getChild (nth p 0) (nth p 2))
+            (getChild (nth p 0) (nth p 3))
+            (getChild (nth p 1) (nth p 2))
+            (getChild (nth p 1) (nth p 3))
+            (getChild (nth p 2) (nth p 3))
+            (getChild (nth p 0) (nth p 1))
+            (getChild (nth p 0) (nth p 2))))))))

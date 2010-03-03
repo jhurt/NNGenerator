@@ -47,12 +47,12 @@
       (.sendMessage @pipe
         (doto (new Message) (.addMessageElement Jxta/MESSAGE_NAMESPACE_NAME strMsgElement))))))
 
-(defn trainNetworkCallback [weights error generation layers]
+(defn trainNetworkCallback [weights error generation layers alpha gamma]
   (let [; this is a small hack because serializing NaN and deserializing it will result
         ; in a symbol instead of Double/NaN, so we send 1.0 in the case of NaN
         ; this should ideally be fixed in Clojure at some point
         e (if (> error 0.0) error 1.0)
-        msg {:weights weights :error e :generation generation :layers layers}]
+        msg {:weights weights :error e :generation generation :layers layers :alpha alpha :gamma gamma}]
     (sendMessageToMaster Jxta/FINISH_TRAIN_XOR_ELEMENT_NAME (serialize msg))))
 
 ;a multimethod for handling incoming messages
@@ -62,7 +62,7 @@
 (defmethod handleIncomingMessage Jxta/TRAIN_XOR_ELEMENT_NAME [msgElem]
   (println "\n\nslave received train xor msg: " (str msgElem))
   (let [msg (deserialize (str msgElem))]
-    (XOR/train (msg :layers) (msg :training-cycles) (msg :generation) trainNetworkCallback)))
+    (XOR/train (msg :layers) (msg :training-cycles) (msg :generation)  (msg :alpha) (msg :gamma) trainNetworkCallback)))
 
 (def pipeMsgListener (proxy [PipeMsgListener] []
   (pipeMsgEvent [#^PipeMsgEvent event]

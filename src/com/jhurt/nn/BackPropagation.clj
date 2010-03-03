@@ -21,12 +21,6 @@
   (:use [com.jhurt.nn.Input])
   (:use [com.jhurt.nn.Common]))
 
-;learning constant defines step length of correction
-(def gamma -0.9)
-
-;momentum factor for help in preventing oscillation during learning
-(def alpha 0.3)
-
 (defn calculateOutput
   "Get the output of the network for a single input"
   [layers input weights]
@@ -95,7 +89,7 @@
 (defn getWeightDeltas
   "Get the weight deltas for each layer based on
   the given backpropogated errors"
-  [input nodeOutputs errors]
+  [input nodeOutputs errors gamma]
   (loop [l (concat (vector input) nodeOutputs)
          e (reverse errors)
          deltas []]
@@ -113,8 +107,10 @@
 (defn trainNetwork
   "Train the network with the given input/output map and initial weight set
    for the desired # of cycles. Input/output pairs are selected randomly at
-   each iteration"
-  [cycles layers ioMap weights inputToErrorMap]
+   each iteration.
+   alpha is the momentum factor for help in preventing oscillation during learning
+   gamma is a learning constant that defines step length of correction"
+  [cycles layers ioMap weights inputToErrorMap alpha gamma]
   (loop [n cycles
          weights weights
          previousDeltas nil
@@ -127,7 +123,7 @@
             ;backpropagation step
             errors (calculateNodeErrors nodeValues weights output)
             ;calculate weight deltas
-            deltas (getWeightDeltas input (nodeValues :nodeOutputs) errors)
+            deltas (getWeightDeltas input (nodeValues :nodeOutputs) errors gamma)
             deltasWithMomentum (if (nil? previousDeltas)
               deltas
               (map matrixAdd deltas (multiplyScalar previousDeltas alpha)))
@@ -140,6 +136,6 @@
           (assoc inputToErrorMap input rmsError)))
       {:rms-error (getTotalRmsError inputToErrorMap) :weights weights})))
 
-(defn train [cycles layers ioMap weights]
+(defn train [cycles layers ioMap weights alpha gamma]
   (let [inputToErrorMap (zipmap (keys ioMap) (take (count ioMap) (cycle [1.0])))]
-    (trainNetwork cycles layers ioMap weights inputToErrorMap)))
+    (trainNetwork cycles layers ioMap weights inputToErrorMap alpha gamma)))
