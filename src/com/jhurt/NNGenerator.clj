@@ -165,9 +165,8 @@
                     outputArity 1
                     canvas (Graph/getNewCanvas weights layers inputArity outputArity)
                     saveNetworkButton (getSaveNetworkButton child canvas)]
-                (do
-                  (println "resultant nn: " child)
-                  (launchGraphWindow canvas saveNetworkButton (child :error)))))))
+                (println "resultant nn: " child)
+                (launchGraphWindow canvas saveNetworkButton (child :error))))))
         (do
           (breed generation results)
           (removeTrainingGeneration generation)
