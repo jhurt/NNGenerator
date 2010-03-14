@@ -94,16 +94,13 @@
 (defn breed
   "breed the generation, this method assumes all results for the generation have been received"
   [generation results]
-  (let [peers (getLivePeers)
-        children (GA/breed results (count peers))]
-    (loop [p peers c children]
-      (if (and (seq p) (seq c))
-        (let [peerId (first p)
-              child (first c)
-              msg {:layers (child :layers) :training-cycles (getMaxTrainingCycles)
+  (let [peers (getLivePeers)]
+    (map
+      (fn [peerId child]
+        (let [msg {:layers (child :layers) :training-cycles (getMaxTrainingCycles)
                    :generation (inc generation) :alpha (child :alpha) :gamma (child :gamma)}]
-          (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))
-          (recur (rest p) (rest c)))))))
+          (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
+      peers (GA/breed results (count peers)))))
 
 (defn removeTrainingGeneration [generation]
   (let [results (@generationToResults generation)]
@@ -168,7 +165,7 @@
                 (println "resultant nn: " child)
                 (launchGraphWindow canvas saveNetworkButton (child :error))))))
         (do
-          (breed generation results)
+          (doall (breed generation results))
           (removeTrainingGeneration generation)
           (SwingUtils/doOnEdt
             #(do
@@ -210,13 +207,9 @@
           (addTrainingResult generation trainResult))))))
 
 (defn messageInCallback
-  "fired whenever a slave sends the master a message"
+  "fired whenever the master receives a message"
   [messages]
-  (loop [msgs messages]
-    (if (seq msgs)
-      (do
-        (handleIncomingMessage (first msgs))
-        (recur (rest msgs))))))
+  (doall (map handleIncomingMessage messages)))
 
 ;forward declaration
 (declare disconnectMasterListener)

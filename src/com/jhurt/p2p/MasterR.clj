@@ -38,11 +38,7 @@
 (def peerIdsToPipes (ref {}))
 
 (defn defaultMessageInCallback [messages]
-  (loop [msgs messages]
-    (if (seq msgs)
-      (do
-        (println (first msgs))
-        (recur (rest msgs))))))
+  (doall (map (fn [msg] (println msg)) messages)))
 
 (def manager (new NetworkManager NetworkManager$ConfigMode/EDGE "Master"
   (.toURI (new File (new File Jxta/JXTA_HOME) "Master"))))
@@ -121,7 +117,9 @@
       (.setTcpOutgoing true)
       (.save))))
 
-(defn start [messageInCallback]
+(defn start
+  "Start the master node. MessageInCallback gets called whenever a message is received"
+  [messageInCallback]
   (Jxta/clearLocalCache)
   (dosync (ref-set callback messageInCallback))
   (configureMasterNode)
