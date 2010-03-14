@@ -98,7 +98,7 @@
   []
   (let [peers (getLivePeers)
         totalPeers (count peers)]
-    (take (- totalPeers (mod totalPeers 4)) peers)))
+    (take (- totalPeers (mod totalPeers 8)) peers)))
 
 (defn breed
   "breed the generation, this method assumes all results for the generation have been received"
