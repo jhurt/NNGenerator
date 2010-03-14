@@ -32,9 +32,12 @@
   '(java.util Date)
   '(java.io File FileWriter))
 
+;mutable state
 (def peerIdToPipeIdMap (ref (sorted-map)))
 (def pipeIdToLastMessageMap (ref (sorted-map)))
+(def generationToResults (ref {}))
 
+;immutable state
 (def masterButton (new JButton "Connect Master"))
 
 (def inputMaxLayers (doto (new JTextField 10) (.setText "5")))
@@ -89,12 +92,18 @@
   (let [peerIds (keys @peerIdToPipeIdMap)]
     (filter Master/isConnectedToPeer peerIds)))
 
-(def generationToResults (ref {}))
+(defn getValidPeers
+  "return a list of peers to which we should send messages. Every
+  4 slaves generates 8 children, so we only train in groups of 4"
+  []
+  (let [peers (getLivePeers)
+        totalPeers (count peers)]
+    (take (- totalPeers (mod totalPeers 4)) peers)))
 
 (defn breed
   "breed the generation, this method assumes all results for the generation have been received"
   [generation results]
-  (let [peers (getLivePeers)]
+  (let [peers (getValidPeers)]
     (map
       (fn [peerId child]
         (let [msg {:layers (child :layers) :training-cycles (getMaxTrainingCycles)
@@ -147,7 +156,7 @@
   "check to see if the generation is ready to breed"
   [generation results]
   (println "received " (count results) " results for generation: " generation)
-  (if (= (count (getLivePeers)) (count results))
+  (if (= (count (getValidPeers)) (count results))
     (do (removeTrainingGeneration generation)
       (if (= generation (getNumberOfGenerations))
         (do
@@ -185,9 +194,9 @@
 (defn updateConnectedPeers []
   ;fire a table data change event
   (.fireTableDataChanged tableModel)
-    ;update the number of connected peers
-    (SwingUtils/doOnEdt
-      #(do (.setText connectedSlavesLabel (str "# Of Connected Peers: " (count @pipeIdToLastMessageMap))))))
+  ;update the number of connected peers
+  (SwingUtils/doOnEdt
+    #(do (.setText connectedSlavesLabel (str "# Of Connected Peers: " (count @pipeIdToLastMessageMap))))))
 
 ;a multimethod for handling incoming messages
 ;the dispatch function is the name of the message element
@@ -222,7 +231,7 @@
 (defn removeDeadSlavesLoop []
   (ThreadUtils/onThread
     #(while true
-      (do (println "checking for deadslaves\n\n\n")
+      (do
         (if (Master/connected)
           (doall (map (fn [msg] (if (messageIsOld msg)
             (do
@@ -283,7 +292,7 @@
                              msg {:layers layers :training-cycles (getMaxTrainingCycles) :generation 1
                                   :alpha alpha :gamma gamma}]
             (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
-          (getLivePeers)))
+          (getValidPeers)))
           (dosync (ref-set generationToResults {}))
           (SwingUtils/doOnEdt
             #(do (.setEnabled generateXorMenuItem false)
