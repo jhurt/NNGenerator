@@ -29,21 +29,28 @@
         result (BP/train numCycles layers XOR-table weights alpha gamma)]
     (callback (result :weights) (result :rms-error) generation layers alpha gamma)))
 
-(def layer1 (vector {:number-of-nodes 5 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
-          {:number-of-nodes 1 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}))
+(def layer1 (vector
+          {:number-of-nodes 50 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
+          {:number-of-nodes 10 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
+          {:number-of-nodes 20 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
+          {:number-of-nodes 50 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
+          {:number-of-nodes 50 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
+          {:number-of-nodes 29 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
+          {:number-of-nodes 1  :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}))
 
-(def layer2 (vector {:number-of-nodes 5 :activation-fn logistic :derivative-fn logisticDerivative}
-          {:number-of-nodes 1 :activation-fn logistic :derivative-fn logisticDerivative}))
+(def layer2 (vector
+          {:number-of-nodes 5 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
+          {:number-of-nodes 1 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}))
 
 (defn testXOR1 [numCycles]
   (let [layers layer1
         weights (getRandomWeightMatrices layers 2 1)]
-    (BP/train numCycles layers XOR-table 0.1 -0.9 weights)))
+    (BP/train numCycles layers XOR-table weights 0.1 -0.9)))
 
 (defn testXOR2 [numCycles]
   (let [layers layer2
         weights (getRandomWeightMatrices layers 2 1)]
-    (BP/train numCycles layers XOR-table 0.1 -0.9 weights)))
+    (BP/train numCycles layers XOR-table weights 0.005 -0.3)))
 
 (defn classifyInput [layers input weights]
   (BP/calculateOutput layers input weights))

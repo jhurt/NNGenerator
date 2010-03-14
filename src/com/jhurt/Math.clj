@@ -61,6 +61,7 @@
 (defn transposeVector [v]
   (if (not (nil? v))
     (transposeMatrix (vector v))))
+
 (defn transposeArray [array]
   (map (fn [& column] column) array))
 

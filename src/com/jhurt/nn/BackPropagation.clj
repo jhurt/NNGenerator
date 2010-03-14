@@ -99,6 +99,16 @@
             delta (multiplyScalar (makeMatrix i (first e)) gamma)]
         (recur (rest l) (rest e) (conj deltas delta))))))
 
+(defn getWeightDeltas2
+  "Get the weight deltas for each layer based on
+  the given backpropogated errors"
+  [input nodeOutputs errors gamma]
+  (map (fn [l e]
+    (let [i (conj l 1.0)]
+      (multiplyScalar (makeMatrix i e) gamma)))
+        (concat (vector input) nodeOutputs)
+        (reverse errors)))
+
 (defn getTotalRmsError
   "return the total of all rms errors for each input of the inputToErrorMap"
   [inputToErrorMap]
@@ -116,14 +126,15 @@
          previousDeltas nil
          inputToErrorMap inputToErrorMap]
     (if (> n 0)
-      (let [input (nth (keys ioMap) (randomBounded -1 (dec (count ioMap))))
+      (let [;grab a random input and corresponding output
+            input (nth (keys ioMap) (randomBounded -1 (dec (count ioMap))))
             output (ioMap input)
             ;feed-forward step
             nodeValues (calculateNodeValues layers input weights)
             ;backpropagation step
             errors (calculateNodeErrors nodeValues weights output)
             ;calculate weight deltas
-            deltas (getWeightDeltas input (nodeValues :nodeOutputs) errors gamma)
+            deltas (getWeightDeltas2 input (nodeValues :nodeOutputs) errors gamma)
             deltasWithMomentum (if (nil? previousDeltas)
               deltas
               (map matrixAdd deltas (multiplyScalar previousDeltas alpha)))
