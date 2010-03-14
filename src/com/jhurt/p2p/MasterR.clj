@@ -142,4 +142,8 @@
   (.stopNetwork manager)
   (doall (map (fn [pipe] (do (.setMessageListener pipe nil) (.close pipe))) (vals @peerIdsToPipes))))
 
+(defn connected
+  "return true iff the master is connected to the Jxta network"
+  [] @listen)
+
 (defn -main [] (start defaultMessageInCallback))

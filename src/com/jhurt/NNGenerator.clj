@@ -66,7 +66,7 @@
       (== 2 index) "Last Message Value"
       (== 3 index) "Last Message Received"
       (== 4 index) "Pipe ID"))
-  (getRowCount [] (count @peerIdToPipeIdMap))
+  (getRowCount [] (count @pipeIdToLastMessageMap))
   (getColumnCount [] 5)
   (getValueAt [rowIndex columnIndex]
     (let [pipeId (nth (seq (keys @pipeIdToLastMessageMap)) rowIndex)
@@ -182,6 +182,13 @@
         (ref-set generationToResults (conj @generationToResults {generation (list result)})))))
   (checkBreedGeneration generation (@generationToResults generation)))
 
+(defn updateConnectedPeers []
+  ;fire a table data change event
+  (.fireTableDataChanged tableModel)
+    ;update the number of connected peers
+    (SwingUtils/doOnEdt
+      #(do (.setText connectedSlavesLabel (str "# Of Connected Peers: " (count @pipeIdToLastMessageMap))))))
+
 ;a multimethod for handling incoming messages
 ;the dispatch function is the name of the message element
 (defmulti handleIncomingMessage (fn [msg] (msg :name)))
@@ -193,11 +200,7 @@
   ;keep a map of pipe id to last incoming heartbeat
   (dosync (ref-set pipeIdToLastMessageMap (conj @pipeIdToLastMessageMap
     (assoc (sorted-map) (msg :pipeId) msg))))
-  ;fire a table data change event
-  (.fireTableDataChanged tableModel)
-  ;update the number of connected peers
-  (SwingUtils/doOnEdt
-    #(do (.setText connectedSlavesLabel (str "# Of Connected Peers: " (count @peerIdToPipeIdMap))))))
+  (updateConnectedPeers))
 
 (defmethod handleIncomingMessage Jxta/FINISH_TRAIN_XOR_ELEMENT_NAME [msg]
   (let [trainResult (deserialize (msg :value))]
@@ -210,6 +213,23 @@
   "fired whenever the master receives a message"
   [messages]
   (doall (map handleIncomingMessage messages)))
+
+(defn messageIsOld
+  "return true if the message is old enough that the sender can be
+  considered to have lost connection"
+  [msg] (< (msg :time) (- (System/currentTimeMillis) 300000)))
+
+(defn removeDeadSlavesLoop []
+  (ThreadUtils/onThread
+    #(while true
+      (do (println "checking for deadslaves\n\n\n")
+        (if (Master/connected)
+          (doall (map (fn [msg] (if (messageIsOld msg)
+            (do
+              (dosync (ref-set pipeIdToLastMessageMap (dissoc @pipeIdToLastMessageMap (msg :pipeId))))
+              (updateConnectedPeers))))
+            (vals @pipeIdToLastMessageMap))))
+        (Thread/sleep 120000)))))
 
 ;forward declaration
 (declare disconnectMasterListener)
@@ -351,6 +371,7 @@
 
 (defn -main []
   (let [frame (new JFrame "Neural Network UI")]
+    (removeDeadSlavesLoop)
     (SwingUtils/setSizeBasedOnResolution frame)
     (layoutTopLeftPanel)
     (.. frame (getContentPane) (add splitPane))

@@ -74,4 +74,4 @@
 
 (defn clearLocalCache []
   (let [f (new File JXTA_HOME)]
-    (do (if (.exists f)) (.delete f))))
+    (do (if (.exists f) (.delete f)))))
