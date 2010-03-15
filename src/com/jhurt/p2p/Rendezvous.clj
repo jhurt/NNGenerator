@@ -43,7 +43,7 @@
   (let [seedingURI (URI/create rdvUri)
         port (Integer/parseInt (last (.split rdvUri ":")))]
     (doto (.getConfigurator manager)
-      (.setHome (new File (str Jxta/JXTA_HOME port)))
+      (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
       (.addSeedRelay seedingURI)
       (.addSeedRendezvous seedingURI)
@@ -61,7 +61,6 @@
       (.save))))
 
 (defn -main [rdvUri]
-  (Jxta/clearLocalCache)
   (configureRdvNode rdvUri)
   (.startNetwork manager)
   (let [netPeerGroup (.getNetPeerGroup manager)

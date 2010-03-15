@@ -67,7 +67,3 @@
     (while (not (.isConnectedToRendezVous rdvService))
       (println "waiting for rendezvous connection")
       (Thread/sleep 5000))))
-
-(defn clearLocalCache []
-  (let [f (new File JXTA_HOME)]
-    (do (if (.exists f) (.delete f)))))

@@ -62,7 +62,7 @@
 (defmethod handleIncomingMessage Jxta/TRAIN_XOR_ELEMENT_NAME [msgElem]
   (println "\n\nslave received train xor msg: " (str msgElem))
   (let [msg (deserialize (str msgElem))]
-    (XOR/train (msg :layers) (msg :training-cycles) (msg :generation)  (msg :alpha) (msg :gamma) trainNetworkCallback)))
+    (XOR/train (msg :layers) (msg :training-cycles) (msg :generation) (msg :alpha) (msg :gamma) trainNetworkCallback)))
 
 (def pipeMsgListener (proxy [PipeMsgListener] []
   (pipeMsgEvent [#^PipeMsgEvent event]
@@ -126,7 +126,8 @@
       (Thread/sleep 60000))))
 
 (defn configureSlaveNode [rdvUri]
-  (let [seedingURI (URI/create rdvUri)]
+  (let [seedingURI (URI/create rdvUri)
+        port (Integer/parseInt (last (.split rdvUri ":")))]
     (doto (.getConfigurator manager)
       (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
@@ -142,7 +143,6 @@
       (.save))))
 
 (defn -main [rdvUri]
-  (Jxta/clearLocalCache)
   (configureSlaveNode rdvUri)
   (.startNetwork manager)
   (println "*************************starting slave node*************************\n")
