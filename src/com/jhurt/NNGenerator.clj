@@ -36,6 +36,7 @@
 (def peerIdToPipeIdMap (ref (sorted-map)))
 (def pipeIdToLastMessageMap (ref (sorted-map)))
 (def generationToResults (ref {}))
+(def rdvUris (ref nil))
 
 ;immutable state
 (def masterButton (new JButton "Connect Master"))
@@ -250,7 +251,7 @@
       (.setEnabled masterButton false)
       (ThreadUtils/onThread
         (fn []
-          (Master/start messageInCallback)
+          (Master/start @rdvUris messageInCallback)
           (SwingUtils/doOnEdt
             #(do (.setText masterButton "Disconnect Master")
               (.removeActionListener masterButton connectMasterListener)
@@ -378,8 +379,9 @@
   (.setOneTouchExpandable true)
   (.setDividerLocation 0.85)))
 
-(defn -main []
+(defn -main [& args]
   (let [frame (new JFrame "Neural Network UI")]
+    (dosync (ref-set rdvUris args))
     (removeDeadSlavesLoop)
     (SwingUtils/setSizeBasedOnResolution frame)
     (layoutTopLeftPanel)

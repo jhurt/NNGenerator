@@ -38,8 +38,8 @@
   (rendezvousEvent [#^RendezvousEvent event]
     (println "Rendezvous event: " (str event)))))
 
-(defn configureRdvNode []
-  (let [seedingURI (URI/create Jxta/RDV_URI)]
+(defn configureRdvNode [rdvUri]
+  (let [seedingURI (URI/create rdvUri)]
     (doto (.getConfigurator manager)
       (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
@@ -52,12 +52,11 @@
       (.setUseOnlyRendezvousSeeds true)
       (.setTcpEnabled true)
       (.setTcpIncoming true)
-      (.setTcpOutgoing true)
-      (.save))))
+      (.setTcpOutgoing true))))
 
-(defn -main []
+(defn -main [rdvUri]
   (Jxta/clearLocalCache)
-  (configureRdvNode)
+  (configureRdvNode rdvUri)
   (.startNetwork manager)
   (let [netPeerGroup (.getNetPeerGroup manager)
         rdvService (.getRendezVousService netPeerGroup)]
@@ -65,8 +64,3 @@
       (.addListener defaultRendezvousListener)
       (.startRendezVous))
     (while true (Thread/sleep 1500))))
- 	
- 
- 
- 
- 

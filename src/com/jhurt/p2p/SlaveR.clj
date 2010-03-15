@@ -125,8 +125,8 @@
         (.getRemoteAdvertisements discoveryService nil DiscoveryService/ADV nil nil 10000 defaultDiscoveryListener))
       (Thread/sleep 60000))))
 
-(defn configureSlaveNode []
-  (let [seedingURI (URI/create Jxta/RDV_URI)]
+(defn configureSlaveNode [rdvUri]
+  (let [seedingURI (URI/create rdvUri)]
     (doto (.getConfigurator manager)
       (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
@@ -141,9 +141,9 @@
       (.setTcpOutgoing true)
       (.save))))
 
-(defn -main []
+(defn -main [rdvUri]
   (Jxta/clearLocalCache)
-  (configureSlaveNode)
+  (configureSlaveNode rdvUri)
   (.startNetwork manager)
   (println "*************************starting slave node*************************\n")
   (dosync (ref-set netPeerGroup (.getNetPeerGroup manager)))

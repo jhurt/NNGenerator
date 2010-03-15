@@ -12,7 +12,6 @@
 (ns
   #^{:author "Jason Lee Hurt"}
   com.jhurt.p2p.MasterR
-  (:gen-class)
   (:require [com.jhurt.p2p.Jxta :as Jxta])
   (:require [com.jhurt.ThreadUtils :as ThreadUtils]))
 
@@ -101,28 +100,29 @@
           (acceptNewPeerConnection (.accept serverPipe)))
         (Thread/sleep 100)))))
 
-(defn configureMasterNode []
-  (let [seedingURI (URI/create Jxta/RDV_URI)]
-    (doto (.getConfigurator manager)
+(defn configureMasterNode [rdvUris]
+  (let [configurator (.getConfigurator manager)]
+    (doto configurator
       (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
-      (.addSeedRelay seedingURI)
-      (.addSeedRendezvous seedingURI)
-      (.addRdvSeedingURI seedingURI)
-      (.addRelaySeedingURI seedingURI)
       (.setUseOnlyRelaySeeds true)
       (.setUseOnlyRendezvousSeeds true)
       (.setTcpEnabled true)
       (.setTcpIncoming false)
-      (.setTcpOutgoing true)
-      (.save))))
+      (.setTcpOutgoing true))
+    (doall (map (fn [rdvUri] (let [seedingURI (URI/create rdvUri)]
+      (doto configurator
+        (.addSeedRelay seedingURI)
+        (.addSeedRendezvous seedingURI)
+        (.addRdvSeedingURI seedingURI)
+        (.addRelaySeedingURI seedingURI)))) rdvUris))))
 
 (defn start
   "Start the master node. MessageInCallback gets called whenever a message is received"
-  [messageInCallback]
+  [rdvUris messageInCallback]
   (Jxta/clearLocalCache)
   (dosync (ref-set callback messageInCallback))
-  (configureMasterNode)
+  (configureMasterNode rdvUris)
   (.startNetwork manager)
   (let [netPeerGroup (.getNetPeerGroup manager)
         adv (Jxta/getPipeAdvertisement)
@@ -145,5 +145,3 @@
 (defn connected
   "return true iff the master is connected to the Jxta network"
   [] @listen)
-
-(defn -main [] (start defaultMessageInCallback))
