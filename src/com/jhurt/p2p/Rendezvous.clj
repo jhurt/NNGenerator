@@ -27,6 +27,7 @@
   '(net.jxta.pipe PipeID PipeService PipeMsgEvent PipeMsgListener)
   '(net.jxta.util JxtaBiDiPipe JxtaServerPipe)
   '(net.jxta.rendezvous RendezvousEvent RendezvousListener RendezVousService)
+  '(net.jxta.impl.endpoint.tcp TcpTransport)
   '(java.io File)
   '(java.util Enumeration)
   '(java.net URI))
@@ -39,9 +40,10 @@
     (println "Rendezvous event: " (str event)))))
 
 (defn configureRdvNode [rdvUri]
-  (let [seedingURI (URI/create rdvUri)]
+  (let [seedingURI (URI/create rdvUri)
+        port (Integer/parseInt (last (.split rdvUri ":")))]
     (doto (.getConfigurator manager)
-      (.setHome (new File Jxta/JXTA_HOME))
+      (.setHome (new File (str Jxta/JXTA_HOME port)))
       (.setUseMulticast false)
       (.addSeedRelay seedingURI)
       (.addSeedRendezvous seedingURI)
@@ -52,7 +54,11 @@
       (.setUseOnlyRendezvousSeeds true)
       (.setTcpEnabled true)
       (.setTcpIncoming true)
-      (.setTcpOutgoing true))))
+      (.setTcpOutgoing true)
+      (.setTcpPort port)
+      (.setTcpStartPort port)
+      (.setTcpEndPort (+ 99 port))
+      (.save))))
 
 (defn -main [rdvUri]
   (Jxta/clearLocalCache)

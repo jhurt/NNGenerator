@@ -103,7 +103,7 @@
 (defn configureMasterNode [rdvUris]
   (let [configurator (.getConfigurator manager)]
     (doto configurator
-      (.setHome (new File Jxta/JXTA_HOME))
+      (.setHome (new File (str Jxta/JXTA_HOME "master")))
       (.setUseMulticast false)
       (.setUseOnlyRelaySeeds true)
       (.setUseOnlyRendezvousSeeds true)
@@ -115,7 +115,8 @@
         (.addSeedRelay seedingURI)
         (.addSeedRendezvous seedingURI)
         (.addRdvSeedingURI seedingURI)
-        (.addRelaySeedingURI seedingURI)))) rdvUris))))
+        (.addRelaySeedingURI seedingURI)))) rdvUris))
+    (doto configurator (.save))))
 
 (defn start
   "Start the master node. MessageInCallback gets called whenever a message is received"
