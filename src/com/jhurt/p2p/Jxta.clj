@@ -67,3 +67,8 @@
     (while (not (.isConnectedToRendezVous rdvService))
       (println "waiting for rendezvous connection")
       (Thread/sleep 5000))))
+
+(defn getPortFromUri
+  "parse the port out of a uri of the form: tcp://70.180.196.124:10701"
+  [uri]
+  (Integer/parseInt (last (.split uri ":"))))

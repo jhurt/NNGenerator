@@ -33,8 +33,9 @@
   '(java.net URI)
   '(java.util Enumeration))
 
-(def manager (new NetworkManager NetworkManager$ConfigMode/EDGE "Slave"
-  (.toURI (new File (new File Jxta/JXTA_HOME) (str "Slave" (rand-int Integer/MAX_VALUE))))))
+(def manager (let [r (rand-int Integer/MAX_VALUE)
+                   peerName (str "Slave" r)] (new NetworkManager NetworkManager$ConfigMode/EDGE peerName
+  (.toURI (new File (new File Jxta/JXTA_HOME) peerName)))))
 
 (def netPeerGroup (ref nil))
 

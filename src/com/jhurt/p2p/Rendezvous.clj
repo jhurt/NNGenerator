@@ -32,16 +32,12 @@
   '(java.util Enumeration)
   '(java.net URI))
 
-(def manager (new NetworkManager NetworkManager$ConfigMode/EDGE "Rendezvous"
-  (.toURI (new File (new File Jxta/JXTA_HOME) "Rendezvous"))))
-
 (def defaultRendezvousListener (proxy [RendezvousListener] []
   (rendezvousEvent [#^RendezvousEvent event]
     (println "Rendezvous event: " (str event)))))
 
-(defn configureRdvNode [rdvUri]
-  (let [seedingURI (URI/create rdvUri)
-        port (Integer/parseInt (last (.split rdvUri ":")))]
+(defn configureRdvNode [manager rdvUri port]
+  (let [seedingURI (URI/create rdvUri)]
     (doto (.getConfigurator manager)
       (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
@@ -58,14 +54,20 @@
       (.setTcpPort port)
       (.setTcpStartPort port)
       (.setTcpEndPort (+ 99 port))
+      (.setRelayMaxClients 100)
+      (.setRendezvousMaxClients 100)
       (.save))))
 
 (defn -main [rdvUri]
-  (configureRdvNode rdvUri)
-  (.startNetwork manager)
-  (let [netPeerGroup (.getNetPeerGroup manager)
-        rdvService (.getRendezVousService netPeerGroup)]
-    (doto rdvService
-      (.addListener defaultRendezvousListener)
-      (.startRendezVous))
-    (while true (Thread/sleep 1500))))
+  (let [port (Jxta/getPortFromUri rdvUri)
+        peerName (str "Rendezvous" port)
+        manager (new NetworkManager NetworkManager$ConfigMode/EDGE peerName
+      (.toURI (new File (new File Jxta/JXTA_HOME) peerName)))]
+    (configureRdvNode manager rdvUri port)
+    (.startNetwork manager)
+    (let [netPeerGroup (.getNetPeerGroup manager)
+          rdvService (.getRendezVousService netPeerGroup)]
+      (doto rdvService
+        (.addListener defaultRendezvousListener)
+        (.startRendezVous))
+      (while true (Thread/sleep 1500)))))
