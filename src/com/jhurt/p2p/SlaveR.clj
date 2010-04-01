@@ -34,8 +34,9 @@
   '(java.util Enumeration))
 
 (def manager (let [r (rand-int Integer/MAX_VALUE)
-                   peerName (str "Slave" r)] (new NetworkManager NetworkManager$ConfigMode/EDGE peerName
-  (.toURI (new File (new File Jxta/JXTA_HOME) peerName)))))
+                   peerName (str "Slave" r)]
+  (new NetworkManager NetworkManager$ConfigMode/EDGE peerName
+    (.toURI (new File (new File Jxta/JXTA_HOME) peerName)))))
 
 (def netPeerGroup (ref nil))
 
@@ -99,14 +100,13 @@
 ;look for a pipe adv from a seq of advertisements
 ;for the first one that is found, a bidirectional pipe
 ;is created and a heartbeat is started to the other end
-(defn findPipeAdv [advsIn]
-  (loop [advs advsIn]
-    (if (and (seq? advs) (not (nil? (first advs))))
-      (do
-        ;(println "advertisement type: " (.getAdvType (first advs)))
-        (if (instance? PipeAdvertisement (first advs))
-          (do (createPipeFromAdv (first advs)) (heartbeat)))
-        (recur (rest advs))))))
+(defn findPipeAdv [advs]
+  (doall (map (fn [adv]
+    (do (println "advertisement type: " (.getAdvType adv) "\n\n")
+      (if (instance? PipeAdvertisement adv)
+        (do
+          (createPipeFromAdv adv)
+          (heartbeat))))) advs)))
 
 ;called whenever Advertisement responses are received from remote peers by the Discovery Service.
 (def defaultDiscoveryListener (proxy [DiscoveryListener] []
@@ -147,7 +147,7 @@
   (configureSlaveNode rdvUri)
   (.startNetwork manager)
   (println "*************************starting slave node*************************\n")
-  (dosync (ref-set netPeerGroup (.getNetPeerGroup manager)))
+  (dosync (ref-set netPeerGroup (.getNetPeerGroup manager))) 
   (Jxta/waitForRendezvous @netPeerGroup)
   (dosync (ref-set discoveryService (.getDiscoveryService @netPeerGroup)))
   (registrationLoop @discoveryService))

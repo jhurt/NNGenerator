@@ -30,31 +30,24 @@
   '(java.util Enumeration)
   '(java.net URI))
 
-(def serverPipe (ref nil))
-(def registrate (ref false))
-(def listen (ref false))
-(def callback (ref nil))
+(def managers (ref []))
 (def peerIdsToPipes (ref {}))
 
 (defn defaultMessageInCallback [messages]
   (doall (map (fn [msg] (println msg)) messages)))
 
-(def manager (new NetworkManager NetworkManager$ConfigMode/EDGE "Master"
-  (.toURI (new File (new File Jxta/JXTA_HOME) "Master"))))
-
-(def pipeMsgListener
+(defn getPipeMsgListener [callback]
   (proxy [PipeMsgListener] []
     (pipeMsgEvent [#^PipeMsgEvent event]
       (let [source (.getSource event)
             msg (.getMessage event)
             elements (iterator-seq (.getMessageElements msg))]
-        (if-not (nil? @callback)
-          (@callback
-            (map
-              (fn [element]
-                (struct Jxta/InputMessage (str (.getPipeID (.getPipeAdvertisement source)))
-                  (.getElementName element) (str element) (System/currentTimeMillis)))
-              elements)))))))
+        (callback
+          (map
+            (fn [element]
+              (struct Jxta/InputMessage (str (.getPipeID (.getPipeAdvertisement source)))
+                (.getElementName element) (str element) (System/currentTimeMillis)))
+            elements))))))
 
 (defn isConnectedToPeer
   "return true if we are connected to the peer specified by peer id"
@@ -73,35 +66,34 @@
 
 (defn registrarLoop [#^DiscoveryService discoveryService pipeAdv]
   (ThreadUtils/onThread
-    #(while @registrate
+    #(while true
       (let [waitTime 60000]
         (println "master publishing register pipe advertisement")
         (.publish discoveryService pipeAdv)
         (.remotePublish discoveryService pipeAdv)
         (Thread/sleep waitTime)))))
 
-(defn acceptNewPeerConnection [#^JxtaBiDiPipe pipe]
+(defn acceptNewPeerConnection [#^JxtaBiDiPipe pipe callback]
   (let [peerId (.getPeerID (.getRemotePeerAdvertisement pipe))]
-    (if @listen
-      (do
-        ;keep a map of input PipeId's to JxtaBidiPipes
-        (dosync (ref-set peerIdsToPipes (conj @peerIdsToPipes {(str peerId) pipe})))
-        (ThreadUtils/onThread
-          #(do
-            (println "JxtaBidiPipe accepted from " peerId "\n")
-            (.setMessageListener pipe pipeMsgListener)))))))
+    (do
+      ;keep a map of input PipeId's to JxtaBidiPipes
+      (dosync (ref-set peerIdsToPipes (conj @peerIdsToPipes {(str peerId) pipe})))
+      (ThreadUtils/onThread
+        #(do
+          (println "JxtaBidiPipe accepted from " peerId "\n")
+          (.setMessageListener pipe (getPipeMsgListener callback)))))))
 
-(defn pipeConnectionLoop [#^JxtaServerPipe serverPipe]
+(defn pipeConnectionLoop [#^JxtaServerPipe serverPipe callback]
   (ThreadUtils/onThread
-    #(while @listen
+    #(while true
       (if-not (.isClosed serverPipe)
         (do
           (println "\n\nserver waiting for peer connection\n")
-          (acceptNewPeerConnection (.accept serverPipe)))
+          (acceptNewPeerConnection (.accept serverPipe) callback))
         (Thread/sleep 100)))))
 
-(defn configureMasterNode [rdvUris]
-  (let [configurator (.getConfigurator manager)]
+(defn configureMasterNode [rdvUri configurator]
+  (let [seedingURI (URI/create rdvUri)]
     (doto configurator
       (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
@@ -109,39 +101,42 @@
       (.setUseOnlyRendezvousSeeds true)
       (.setTcpEnabled true)
       (.setTcpIncoming false)
-      (.setTcpOutgoing true))
-    (doall (map (fn [rdvUri] (let [seedingURI (URI/create rdvUri)]
-      (doto configurator
-        (.addSeedRelay seedingURI)
-        (.addSeedRendezvous seedingURI)
-        (.addRdvSeedingURI seedingURI)
-        (.addRelaySeedingURI seedingURI)))) rdvUris))
-    (doto configurator (.save))))
+      (.setTcpOutgoing true)
+      (.addSeedRelay seedingURI)
+      (.addSeedRendezvous seedingURI)
+      (.addRdvSeedingURI seedingURI)
+      (.addRelaySeedingURI seedingURI)
+      (.save))))
 
 (defn start
-  "Start the master node. MessageInCallback gets called whenever a message is received"
+  "Start a master node. messageInCallback gets called whenever a message is received"
+  [rdvUri messageInCallback]
+  (let [port (Jxta/getPortFromUri rdvUri)
+        manager (new NetworkManager NetworkManager$ConfigMode/EDGE (str "Master" port)
+      (.toURI (new File (new File Jxta/JXTA_HOME) (str "Master" port))))]
+    (configureMasterNode rdvUri (.getConfigurator manager))
+    (.startNetwork manager)
+    (let [netPeerGroup (.getNetPeerGroup manager)
+          adv (Jxta/getPipeAdvertisement)
+          discoveryService (.getDiscoveryService netPeerGroup)
+          serverPipe (doto (new JxtaServerPipe netPeerGroup adv) (.setPipeTimeout 0))]
+      (dosync (ref-set managers (conj @managers manager)))
+      (Jxta/waitForRendezvous netPeerGroup)
+      (registrarLoop discoveryService adv)
+      (pipeConnectionLoop serverPipe messageInCallback))))
+
+(defn startAll
+  "start all master nodes, one for each rdv/relay node"
   [rdvUris messageInCallback]
-  (dosync (ref-set callback messageInCallback))
-  (configureMasterNode rdvUris)
-  (.startNetwork manager)
-  (let [netPeerGroup (.getNetPeerGroup manager)
-        adv (Jxta/getPipeAdvertisement)
-        discoveryService (.getDiscoveryService netPeerGroup)]
-    (Jxta/waitForRendezvous netPeerGroup)
-    (dosync (ref-set serverPipe (doto (new JxtaServerPipe netPeerGroup adv) (.setPipeTimeout 0))))
-    (dosync (ref-set registrate true))
-    (dosync (ref-set listen true))
-    (registrarLoop discoveryService adv)
-    (pipeConnectionLoop @serverPipe)))
+  (start (first rdvUris) messageInCallback))
+  ;(doall (map (fn [rdvUri] (start rdvUri messageInCallback)) rdvUris)))
 
-(defn stop []
+(defn stop
+  [manager]
   (println "Stopping master")
-  (dosync (ref-set registrate false))
-  (dosync (ref-set listen false))
-  (.close @serverPipe)
-  (.stopNetwork manager)
-  (doall (map (fn [pipe] (do (.setMessageListener pipe nil) (.close pipe))) (vals @peerIdsToPipes))))
+  (.stopNetwork manager))
 
-(defn connected
-  "return true iff the master is connected to the Jxta network"
-  [] @listen)
+(defn stopAll
+  "stop all master nodes"
+  []
+  (doall (map (fn [m] (stop m)) @managers)))

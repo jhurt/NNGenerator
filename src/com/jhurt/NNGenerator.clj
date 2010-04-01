@@ -233,12 +233,11 @@
   (ThreadUtils/onThread
     #(while true
       (do
-        (if (Master/connected)
-          (doall (map (fn [msg] (if (messageIsOld msg)
-            (do
-              (dosync (ref-set pipeIdToLastMessageMap (dissoc @pipeIdToLastMessageMap (msg :pipeId))))
-              (updateConnectedPeers))))
-            (vals @pipeIdToLastMessageMap))))
+        (doall (map (fn [msg] (if (messageIsOld msg)
+          (do
+            (dosync (ref-set pipeIdToLastMessageMap (dissoc @pipeIdToLastMessageMap (msg :pipeId))))
+            (updateConnectedPeers))))
+          (vals @pipeIdToLastMessageMap)))
         (Thread/sleep 120000)))))
 
 ;forward declaration
@@ -251,7 +250,7 @@
       (.setEnabled masterButton false)
       (ThreadUtils/onThread
         (fn []
-          (Master/start @rdvUris messageInCallback)
+          (Master/startAll @rdvUris messageInCallback)
           (SwingUtils/doOnEdt
             #(do (.setText masterButton "Disconnect Master")
               (.removeActionListener masterButton connectMasterListener)
@@ -265,7 +264,7 @@
       (.setEnabled masterButton false)
       (ThreadUtils/onThread
         (fn []
-          (Master/stop)
+          (Master/stopAll)
           (dosync (ref-set peerIdToPipeIdMap (sorted-map)))
           (dosync (ref-set pipeIdToLastMessageMap (sorted-map)))
           (.fireTableDataChanged tableModel)

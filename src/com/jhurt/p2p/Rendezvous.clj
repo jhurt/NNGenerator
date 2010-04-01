@@ -36,15 +36,16 @@
   (rendezvousEvent [#^RendezvousEvent event]
     (println "Rendezvous event: " (str event)))))
 
-(defn configureRdvNode [manager rdvUri port]
-  (let [seedingURI (URI/create rdvUri)]
-    (doto (.getConfigurator manager)
+(defn configureRdvNode
+  "Configure a new rendezvous/relay node
+   manager - a NetworkManager
+   port - the listening port of the node
+   allRdvUris - a list of all rdv/relay nodes in the network"
+  [manager rdvUri port allRdvUris]
+  (let [configurator (.getConfigurator manager)]
+    (doto configurator
       (.setHome (new File Jxta/JXTA_HOME))
       (.setUseMulticast false)
-      (.addSeedRelay seedingURI)
-      (.addSeedRendezvous seedingURI)
-      (.addRdvSeedingURI seedingURI)
-      (.addRelaySeedingURI seedingURI)
       (.setMode (+ NetworkConfigurator/RDV_SERVER NetworkConfigurator/RELAY_SERVER))
       (.setUseOnlyRelaySeeds true)
       (.setUseOnlyRendezvousSeeds true)
@@ -55,19 +56,31 @@
       (.setTcpStartPort port)
       (.setTcpEndPort (+ 99 port))
       (.setRelayMaxClients 100)
-      (.setRendezvousMaxClients 100)
-      (.save))))
+      (.setRendezvousMaxClients 100))
+    (doall (map (fn [r]
+      (let [s (URI/create r)]
+        (doto configurator
+          (.addSeedRelay s)
+          (.addSeedRendezvous s)
+          (.addRdvSeedingURI s)
+          (.addRelaySeedingURI s)))) allRdvUris))
+    (.save configurator)))
 
-(defn -main [rdvUri]
-  (let [port (Jxta/getPortFromUri rdvUri)
+(defn -main [& args]
+  (let [i (Integer/parseInt (first args))
+        rdvUri (nth args (inc i))
+        allRdvUris (rest args)
+        port (Jxta/getPortFromUri rdvUri)
         peerName (str "Rendezvous" port)
-        manager (new NetworkManager NetworkManager$ConfigMode/EDGE peerName
-      (.toURI (new File (new File Jxta/JXTA_HOME) peerName)))]
-    (configureRdvNode manager rdvUri port)
+        manager
+        (new NetworkManager NetworkManager$ConfigMode/RELAY peerName
+          (.toURI (new File (new File Jxta/JXTA_HOME) peerName)))]
+    (configureRdvNode manager rdvUri port allRdvUris)
     (.startNetwork manager)
     (let [netPeerGroup (.getNetPeerGroup manager)
           rdvService (.getRendezVousService netPeerGroup)]
+      (println "/n/n NetPeerGroup ID: " (.getPeerGroupID netPeerGroup) " NAME: " (.getPeerGroupName netPeerGroup) "\n\n")
       (doto rdvService
         (.addListener defaultRendezvousListener)
         (.startRendezVous))
-      (while true (Thread/sleep 1500)))))
+      (while true (Thread/sleep 5000)))))   
