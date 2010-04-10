@@ -18,6 +18,9 @@
 		<fileset dir="${jxta.lib.dir}">
 			<include name="**/*.jar" />
 		</fileset>
+        <fileset dir="${activemq.lib.dir}">
+            <include name="**/*.jar" />
+        </fileset>
         <fileset dir="${piccolo.lib.dir}">
             <include name="**/*.jar" />
         </fileset>
@@ -61,6 +64,8 @@
 				<path location="${source.dir}" />
 			</classpath>
 			<sysproperty key="clojure.compile.path" value="${bin.dir}" />
+            <arg value="com.jhurt.example.Consumer" />
+            <arg value="com.jhurt.example.Producer" />
 
 			<arg value="com.jhurt.p2p.Jxta" />
 			<arg value="com.jhurt.p2p.MasterR" />
