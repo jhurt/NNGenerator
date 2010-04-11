@@ -12,7 +12,8 @@
 (ns
   #^{:author "Jason Lee Hurt"}
   com.jhurt.example.Producer
-  (:gen-class))
+  (:gen-class)
+  (:require [com.jhurt.ThreadUtils :as ThreadUtils]))
 
 (import
   '(javax.jms DeliveryMode Session)
@@ -21,11 +22,15 @@
 
 (defn start []
   (let [connectionFactory (new ActiveMQConnectionFactory ActiveMQConnection/DEFAULT_USER ActiveMQConnection/DEFAULT_PASSWORD ActiveMQConnection/DEFAULT_BROKER_URL)
-        connection (doto (.createConnection connectionFactory) (.start))
-        session (.createSession connection false Session/AUTO_ACKNOWLEDGE)
-        destination (.createQueue "TestSubject")
-        producer (doto (.createProducer session destination) (.setDeliveryMode DeliveryMode/PERSISTENT))]
-    (while true
-      (let [message (.createTextMessage session "Some Test Message")]
-        (.send producer message))
-      (Thread/sleep 500))))
+        connection (.createConnection connectionFactory)]
+    (.start connection)
+    (let [session (.createSession connection false Session/AUTO_ACKNOWLEDGE)
+          destination (.createQueue session "TestSubject")
+          producer (.createProducer session destination)]
+      (.setDeliveryMode producer DeliveryMode/PERSISTENT)
+      (ThreadUtils/onThread
+        #(while true
+          (let [message (.createTextMessage session "Some Test Message")]
+            (.send producer message)
+            (println "sent message\n")
+            (Thread/sleep 500)))))))
