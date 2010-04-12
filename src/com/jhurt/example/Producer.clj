@@ -28,9 +28,8 @@
           destination (.createQueue session "TestSubject")
           producer (.createProducer session destination)]
       (.setDeliveryMode producer DeliveryMode/PERSISTENT)
-      (ThreadUtils/onThread
-        #(while true
-          (let [message (.createTextMessage session "Some Test Message")]
-            (.send producer message)
-            (println "sent message\n")
-            (Thread/sleep 500)))))))
+      (while true
+        (let [message (.createTextMessage session "Some Test Message")]
+          (.send producer message)
+          (println "sent message\n")
+          (Thread/sleep 1000))))))
