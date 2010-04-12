@@ -64,8 +64,9 @@
 				<path location="${source.dir}" />
 			</classpath>
 			<sysproperty key="clojure.compile.path" value="${bin.dir}" />
-            <arg value="com.jhurt.example.Consumer" />
-            <arg value="com.jhurt.example.Producer" />
+            <arg value="com.jhurt.comm.Comm" />
+            <arg value="com.jhurt.comm.Master" />
+            <arg value="com.jhurt.comm.Slave" />
 
 			<arg value="com.jhurt.p2p.Jxta" />
 			<arg value="com.jhurt.p2p.MasterR" />
