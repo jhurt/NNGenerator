@@ -20,8 +20,12 @@
 (def SLAVES_QUEUE_NAME "SLAVE_QUEUE")
 (def MASTER_QUEUE_NAME "MASTER_QUEUE")
 
-(defstruct Publisher :producer)
-(defstruct Subscriber :consumer :replyProducer)
+(def TRAIN_XOR "trainXOR")
+(def FINISH_TRAIN_XOR "finishTrainXOR")
+(def HEARTBEAT "hb")
+
+(defstruct Publisher :producer :session)
+(defstruct Subscriber :consumer :replyProducer :session)
 
 (def dfltExceptionListener (proxy [ExceptionListener] []
   (onException [#^JMSException exception]
@@ -35,7 +39,9 @@
 (defn getPublisher [connection queueName]
   (let [session (.createSession connection false Session/AUTO_ACKNOWLEDGE)
         destination (.createQueue session queueName)]
-    (struct Publisher (doto (.createProducer session destination) (.setDeliveryMode DeliveryMode/PERSISTENT)))))
+    (struct Publisher
+      (doto (.createProducer session destination) (.setDeliveryMode DeliveryMode/PERSISTENT))
+      session)))
 
 (defn getSubscriber [connection queueName clientId msgListener]
   (let [c (doto connection (.setClientID clientId) (.setExceptionListener dfltExceptionListener))
@@ -43,4 +49,20 @@
         destination (.createQueue session queueName)
         consumer (doto (.createConsumer session destination) msgListener)
         producer (doto (.createProducer session nil) (.setDeliveryMode DeliveryMode/NON_PERSISTENT))]
-    (struct Subscriber consumer producer)))
+    (struct Subscriber consumer producer session)))
+
+(defn heartbeat [clientId publisher]
+  (let [producer (publisher :producer)
+        session (publisher :session)
+        m (doto (.createTextMessage session "hb") (.setStringProperty "name" name) (.setStringProperty "clientId" clientId))]
+    (.send producer m)))
+
+(defn publishMessage
+  "publish a string message"
+  [publisher name content]
+  (let [producer (publisher :producer)
+        session (publisher :session)
+        m (doto (.createTextMessage session content) (.setStringProperty "name" name))]
+    (.send producer m)))
+
+(defn close [endpoint] (.close endpoint))

@@ -14,14 +14,14 @@
   com.jhurt.NNGenerator
   (:gen-class)
   (:use [com.jhurt.Serialization])
-  (:require [com.jhurt.p2p.MasterR :as Master])
-  (:require [com.jhurt.p2p.Jxta :as Jxta])
   (:require [com.jhurt.SwingUtils :as SwingUtils])
   (:require [com.jhurt.ThreadUtils :as ThreadUtils])
   (:require [com.jhurt.CollectionsUtils :as CU])
   (:require [com.jhurt.ga.GA :as GA])
   (:require [com.jhurt.nn.Common :as Common])
-  (:require [com.jhurt.Graph :as Graph]))
+  (:require [com.jhurt.Graph :as Graph])
+  (:require [com.jhurt.comm.Comm :as Comm])
+  (:require [com.jhurt.comm.Master :as Master]))
 
 (import
   '(javax.swing JButton JFileChooser JFrame JLabel JMenu JMenuBar JMenuItem JOptionPane JPanel JProgressBar JScrollPane JSplitPane JTable JTextField)
@@ -30,13 +30,14 @@
   '(java.awt Color BorderLayout GridBagConstraints GridBagLayout Insets)
   '(java.awt.event ActionListener)
   '(java.util Date)
-  '(java.io File FileWriter))
+  '(java.io File FileWriter)
+  '(javax.jms MessageListener))
 
 ;mutable state
-(def peerIdToPipeIdMap (ref (sorted-map)))
-(def pipeIdToLastMessageMap (ref (sorted-map)))
+(def masterSubscriber (ref nil))
+(def slavesPublisher (ref nil))
+(def clientIdToLastMsgMap (ref (sorted-map)))
 (def generationToResults (ref {}))
-(def rdvUris (ref nil))
 
 ;immutable state
 (def masterButton (new JButton "Connect Master"))
@@ -57,6 +58,10 @@
 (defn getNumberOfGenerations []
   (Integer/parseInt (.getText inputNumberOfGenerations)))
 
+(def inputNumberOfSlaves (doto (new JTextField 10) (.setText "8")))
+(defn getNumberOfSlaves []
+  (Integer/parseInt (.getText inputNumberOfSlaves)))
+
 (def progressBar (doto (new JProgressBar 0) (.setValue 0) (.setStringPainted true)))
 
 (def connectedSlavesLabel (new JLabel "# Of Connected Peers: "))
@@ -65,52 +70,35 @@
 
 (def tableModel (proxy [AbstractTableModel] []
   (getColumnName [index]
-    (cond (== 0 index) "Peer ID"
-      (== 1 index) "Last Message Key"
-      (== 2 index) "Last Message Value"
-      (== 3 index) "Last Message Received"
-      (== 4 index) "Pipe ID"))
-  (getRowCount [] (count @pipeIdToLastMessageMap))
-  (getColumnCount [] 5)
+    (cond (== 0 index) "JMS Client Id"
+      (== 1 index) "Message Name"
+      (== 2 index) "Message Value"
+      (== 3 index) "Message Receipt Time"))
+  (getRowCount [] (count @clientIdToLastMsgMap))
+  (getColumnCount [] 4)
   (getValueAt [rowIndex columnIndex]
-    (let [pipeId (nth (seq (keys @pipeIdToLastMessageMap)) rowIndex)
-          msg (@pipeIdToLastMessageMap pipeId)
-          peerId ((CU/inverseMap @peerIdToPipeIdMap) pipeId)]
+    (let [clientId (nth (seq (keys @clientIdToLastMsgMap)) rowIndex)
+          msg (@clientIdToLastMsgMap clientId)]
       (if-not (nil? msg)
-        (cond (== 0 columnIndex) peerId
-          (== 1 columnIndex) (msg :name)
-          (== 2 columnIndex) (msg :value)
-          (== 3 columnIndex) (str (new Date (msg :time)))
-          (== 4 columnIndex) pipeId))))))
+        (cond (== 0 columnIndex) clientId
+          (== 1 columnIndex) (.getStringProperty msg "name")
+          (== 2 columnIndex) (.getText msg)
+          (== 3 columnIndex) (str (new Date (.getJMSTimestamp msg)))))))))
 
 (def fileFilterNN (proxy [FileFilter] []
   (accept [f] (or (.isDirectory f) (.endsWith (.getName f) ".nn")))
   (getDescription [] "Neural Network Files")))
 
-(defn getLivePeers
-  "return a list of peers to which the master is currently connected"
-  []
-  (let [peerIds (keys @peerIdToPipeIdMap)]
-    (filter Master/isConnectedToPeer peerIds)))
-
-(defn getValidPeers
-  "return a list of peers to which we should send messages. Every
-  4 slaves generates 8 children, so we only train in groups of 4"
-  []
-  (let [peers (getLivePeers)
-        totalPeers (count peers)]
-    (take (- totalPeers (mod totalPeers 8)) peers)))
-
 (defn breed
   "breed the generation, this method assumes all results for the generation have been received"
   [generation results]
-  (let [peers (getValidPeers)]
-    (map
-      (fn [peerId child]
-        (let [msg {:layers (child :layers) :training-cycles (getMaxTrainingCycles)
-                   :generation (inc generation) :alpha (child :alpha) :gamma (child :gamma)}]
-          (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
-      peers (GA/breed results (count peers)))))
+  (doall (map
+    (fn [child]
+      (let [msg {:layers (child :layers)
+                 :training-cycles (getMaxTrainingCycles) :generation (inc generation)
+                 :alpha (child :alpha) :gamma (child :gamma)}]
+        (Comm/publishMessage @slavesPublisher Comm/TRAIN_XOR (serialize msg))))
+    (GA/breed results (getNumberOfSlaves)))))
 
 (defn removeTrainingGeneration [generation]
   (let [results (@generationToResults generation)]
@@ -157,29 +145,29 @@
   "check to see if the generation is ready to breed"
   [generation results]
   (println "received " (count results) " results for generation: " generation)
-  (if (= (count (getValidPeers)) (count results))
-    (do (removeTrainingGeneration generation)
-      (if (= generation (getNumberOfGenerations))
-        (do
-          (SwingUtils/doOnEdt
-            #(do
-              (.setValue progressBar generation)
-              (.setEnabled generateXorMenuItem true)
-              (let [child (GA/getHealthiestChild results)
-                    layers (child :layers)
-                    weights (child :weights)
-                    inputArity 2
-                    outputArity 1
-                    canvas (Graph/getNewCanvas weights layers inputArity outputArity)
-                    saveNetworkButton (getSaveNetworkButton child canvas)]
-                (println "resultant nn: " child)
-                (launchGraphWindow canvas saveNetworkButton (child :error))))))
-        (do
-          (doall (breed generation results))
-          (removeTrainingGeneration generation)
-          (SwingUtils/doOnEdt
-            #(do
-              (.setValue progressBar generation))))))))
+  (if (= (count (getNumberOfSlaves)) (count results))
+    (if (= generation (getNumberOfGenerations))
+      ;GA is complete
+      (SwingUtils/doOnEdt
+        #(do
+          (.setValue progressBar generation)
+          (.setEnabled generateXorMenuItem true)
+          (let [child (GA/getHealthiestChild results)
+                layers (child :layers)
+                weights (child :weights)
+                inputArity 2
+                outputArity 1
+                canvas (Graph/getNewCanvas weights layers inputArity outputArity)
+                saveNetworkButton (getSaveNetworkButton child canvas)]
+            (println "resultant nn: " child)
+            (launchGraphWindow canvas saveNetworkButton (child :error)))))
+      ;breed the results
+      (do
+        (breed generation results)
+        (removeTrainingGeneration generation)
+        (SwingUtils/doOnEdt
+          #(do
+            (.setValue progressBar generation)))))))
 
 (defn addTrainingResult
   "add a new training result to the list, each generation will have its own list of results"
@@ -197,32 +185,28 @@
   (.fireTableDataChanged tableModel)
   ;update the number of connected peers
   (SwingUtils/doOnEdt
-    #(do (.setText connectedSlavesLabel (str "# Of Connected Peers: " (count @pipeIdToLastMessageMap))))))
+    #(do (.setText connectedSlavesLabel (str "# Of Connected Peers: " (count @clientIdToLastMsgMap))))))
 
 ;a multimethod for handling incoming messages
 ;the dispatch function is the name of the message element
-(defmulti handleIncomingMessage (fn [msg] (msg :name)))
+(defmulti handleIncomingMessage (fn [msg] (.getStringProperty msg "name")))
 
-(defmethod handleIncomingMessage Jxta/HEARTBEAT_ELEMENT_NAME [msg]
-  ;keep a map of pipe id to peer id's
-  (dosync (ref-set peerIdToPipeIdMap (conj @peerIdToPipeIdMap
-    (assoc (sorted-map) (msg :value) (msg :pipeId)))))
-  ;keep a map of pipe id to last incoming heartbeat
-  (dosync (ref-set pipeIdToLastMessageMap (conj @pipeIdToLastMessageMap
-    (assoc (sorted-map) (msg :pipeId) msg))))
+(defmethod handleIncomingMessage Comm/HEARTBEAT [msg]
+  ;keep a map of client to last incoming heartbeat msg
+  (dosync (ref-set clientIdToLastMsgMap (conj @clientIdToLastMsgMap
+    (assoc (sorted-map) (.getStringProperty msg "clientId") msg))))
   (updateConnectedPeers))
 
-(defmethod handleIncomingMessage Jxta/FINISH_TRAIN_XOR_ELEMENT_NAME [msg]
-  (let [trainResult (deserialize (msg :value))]
+(defmethod handleIncomingMessage Comm/FINISH_TRAIN_XOR [msg]
+  (let [trainResult (deserialize (.getText msg))]
     (if-not (nil? trainResult)
       (let [generation (trainResult :generation)]
         (if-not (nil? generation)
           (addTrainingResult generation trainResult))))))
 
-(defn messageInCallback
-  "fired whenever the master receives a message"
-  [messages]
-  (doall (map handleIncomingMessage messages)))
+(def dfltMessageListener (proxy [MessageListener] []
+  (onMessage [message]
+    (handleIncomingMessage message))))
 
 (defn messageIsOld
   "return true if the message is old enough that the sender can be
@@ -235,9 +219,9 @@
       (do
         (doall (map (fn [msg] (if (messageIsOld msg)
           (do
-            (dosync (ref-set pipeIdToLastMessageMap (dissoc @pipeIdToLastMessageMap (msg :pipeId))))
+            (dosync (ref-set clientIdToLastMsgMap (dissoc @clientIdToLastMsgMap (.getStringProperty msg "clientId"))))
             (updateConnectedPeers))))
-          (vals @pipeIdToLastMessageMap)))
+          (vals @clientIdToLastMsgMap)))
         (Thread/sleep 120000)))))
 
 ;forward declaration
@@ -250,7 +234,9 @@
       (.setEnabled masterButton false)
       (ThreadUtils/onThread
         (fn []
-          (Master/startAll @rdvUris messageInCallback)
+          (let [endpoints (Master/start dfltMessageListener)]
+            (dosync (ref-set masterSubscriber (endpoints :subscriber))
+              (ref-set slavesPublisher (endpoints :publisher))))
           (SwingUtils/doOnEdt
             #(do (.setText masterButton "Disconnect Master")
               (.removeActionListener masterButton connectMasterListener)
@@ -264,9 +250,8 @@
       (.setEnabled masterButton false)
       (ThreadUtils/onThread
         (fn []
-          (Master/stopAll)
-          (dosync (ref-set peerIdToPipeIdMap (sorted-map)))
-          (dosync (ref-set pipeIdToLastMessageMap (sorted-map)))
+          (Comm/close @masterSubscriber)
+          (Comm/close @slavesPublisher)
           (.fireTableDataChanged tableModel)
           (SwingUtils/doOnEdt
             #(do (.setText masterButton "Connect Master")
@@ -285,14 +270,16 @@
   (.addActionListener (proxy [ActionListener] []
     (actionPerformed [e]
       (ThreadUtils/onThread
-        (fn [] (doall (map
-          (fn [peerId] (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) 1)
-                             alpha (Common/randomAlpha)
-                             gamma (Common/randomGamma)
-                             msg {:layers layers :training-cycles (getMaxTrainingCycles) :generation 1
-                                  :alpha alpha :gamma gamma}]
-            (Master/sendMessageToPeer peerId Jxta/TRAIN_XOR_ELEMENT_NAME (serialize msg))))
-          (getValidPeers)))
+        (fn []
+          (loop [n (count (getNumberOfSlaves))]
+            (if (>= 0 n)
+              (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) 1)
+                    alpha (Common/randomAlpha)
+                    gamma (Common/randomGamma)
+                    msg {:layers layers :training-cycles (getMaxTrainingCycles) :generation 1
+                         :alpha alpha :gamma gamma}]
+                (do (Comm/publishMessage @slavesPublisher Comm/TRAIN_XOR (serialize msg))
+                  (recur (dec n))))))
           (dosync (ref-set generationToResults {}))
           (SwingUtils/doOnEdt
             #(do (.setEnabled generateXorMenuItem false)
@@ -352,9 +339,15 @@
     (set! (.gridx constraints) 1)
     (.add topLeftPanel inputNumberOfGenerations constraints)
 
-    (set! (.insets constraints) (new Insets 30 0 30 0))
     (set! (.gridx constraints) 0)
     (set! (.gridy constraints) 5)
+    (.add topLeftPanel (new JLabel "# of Slaves:") constraints)
+    (set! (.gridx constraints) 1)
+    (.add topLeftPanel inputNumberOfSlaves constraints)
+
+    (set! (.insets constraints) (new Insets 30 0 30 0))
+    (set! (.gridx constraints) 0)
+    (set! (.gridy constraints) 6)
     (set! (.gridwidth constraints) 2)
     (.add topLeftPanel (doto progressBar (.setVisible false)) constraints)))
 
@@ -380,7 +373,6 @@
 
 (defn -main [& args]
   (let [frame (new JFrame "Neural Network UI")]
-    (dosync (ref-set rdvUris args))
     (removeDeadSlavesLoop)
     (SwingUtils/setSizeBasedOnResolution frame)
     (layoutTopLeftPanel)

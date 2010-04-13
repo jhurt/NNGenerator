@@ -19,19 +19,9 @@
   '(javax.jms Message MessageListener)
   '(org.apache.activemq ActiveMQConnection))
 
-; publisher for slaves' msg queue
-(def publisher (ref nil))
-; subscriber for master's msg queue
-(def subscriber (ref nil))
-
-(def dfltMessageListener (proxy [MessageListener] []
-  (onMessage [#^Message message]
-    (println "Received msg: " (.getText message)))))
-
-(defn start []
+(defn start [msgListener]
   (let [url ActiveMQConnection/DEFAULT_BROKER_URL
         connection (Comm/getNewConnection url)]
-    (.start connection
-    (dosync
-      (ref-set publisher (Comm/getPublisher connection Comm/SLAVES_QUEUE_NAME))
-      (ref-set subscriber (Comm/getSubscriber connection Comm/MASTER_QUEUE_NAME "Master" dfltMessageListener))))))
+    (.start connection)
+    {:publisher (Comm/getPublisher connection Comm/SLAVES_QUEUE_NAME)
+     :subscriber (Comm/getSubscriber connection Comm/MASTER_QUEUE_NAME "Master" msgListener)}))
