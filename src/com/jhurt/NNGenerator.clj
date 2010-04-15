@@ -145,7 +145,7 @@
   "check to see if the generation is ready to breed"
   [generation results]
   (println "received " (count results) " results for generation: " generation)
-  (if (= (count (getNumberOfSlaves)) (count results))
+  (if (= (getNumberOfSlaves) (count results))
     (if (= generation (getNumberOfGenerations))
       ;GA is complete
       (SwingUtils/doOnEdt
@@ -271,8 +271,8 @@
     (actionPerformed [e]
       (ThreadUtils/onThread
         (fn []
-          (loop [n (count (getNumberOfSlaves))]
-            (if (>= 0 n)
+          (loop [n (getNumberOfSlaves)]
+            (if (>= n 0)
               (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) 1)
                     alpha (Common/randomAlpha)
                     gamma (Common/randomGamma)
