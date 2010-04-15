@@ -2,7 +2,6 @@
 <project name="NeuralNetwork" default="build">
 	<property file="build.properties" />
 
-	<property name="jxta.cache.dir" location=".nn_cache" />
 	<property name="bin.dir" location="bin" />
 	<property name="test.bin.dir" location="test-bin" />
 	<property name="source.dir" location="src" />
@@ -13,9 +12,6 @@
 
 	<path id="dependencies">
 		<fileset dir="${jogl.lib.dir}">
-			<include name="**/*.jar" />
-		</fileset>
-		<fileset dir="${jxta.lib.dir}">
 			<include name="**/*.jar" />
 		</fileset>
         <fileset dir="${activemq.lib.dir}">
@@ -48,7 +44,6 @@
 	</target>
 
 	<target name="clean" description="Remove binary files">
-		<delete dir="${jxta.cache.dir}" />
 		<delete file="${nn.jar}" />
 		<delete dir="${bin.dir}" />
 		<delete dir="${test.bin.dir}" />
@@ -67,11 +62,6 @@
             <arg value="com.jhurt.comm.Comm" />
             <arg value="com.jhurt.comm.Master" />
             <arg value="com.jhurt.comm.Slave" />
-
-			<arg value="com.jhurt.p2p.Jxta" />
-			<arg value="com.jhurt.p2p.MasterR" />
-			<arg value="com.jhurt.p2p.SlaveR" />
-			<arg value="com.jhurt.p2p.Rendezvous" />
 
 			<arg value="com.jhurt.nn.ActivationFunctions" />
 			<arg value="com.jhurt.nn.BackPropagation" />
@@ -129,13 +119,10 @@
 				<include name="nn.jar" />
 			</fileset>
 			<fileset dir="${scripts.dir}/linux">
-				<include name="**/*.sh" />
-			</fileset>
-			<fileset dir="${scripts.dir}/windows">
-				<include name="**/*.bat" />
+				<include name="*.sh" />
 			</fileset>
             <fileset dir="${piccolo.lib.dir}" includes="**/*.jar" />
-			<fileset dir="${jxta.lib.dir}" includes="**/*.jar" />
+			<fileset dir="${activemq.lib.dir}" includes="**/*.jar" />
 			<fileset dir="${clojure.lib.dir}" includes="clojure.jar" />
 		</copy>
 	</target>

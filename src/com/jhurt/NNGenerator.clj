@@ -13,7 +13,6 @@
   #^{:author "Jason Lee Hurt"}
   com.jhurt.NNGenerator
   (:gen-class)
-  (:use [com.jhurt.Serialization])
   (:require [com.jhurt.SwingUtils :as SwingUtils])
   (:require [com.jhurt.ThreadUtils :as ThreadUtils])
   (:require [com.jhurt.CollectionsUtils :as CU])
@@ -21,7 +20,8 @@
   (:require [com.jhurt.nn.Common :as Common])
   (:require [com.jhurt.Graph :as Graph])
   (:require [com.jhurt.comm.Comm :as Comm])
-  (:require [com.jhurt.comm.Master :as Master]))
+  (:require [com.jhurt.comm.Master :as Master])
+  (:use [com.jhurt.Serialization]))
 
 (import
   '(javax.swing JButton JFileChooser JFrame JLabel JMenu JMenuBar JMenuItem JOptionPane JPanel JProgressBar JScrollPane JSplitPane JTable JTextField)
@@ -211,7 +211,7 @@
 (defn messageIsOld
   "return true if the message is old enough that the sender can be
   considered to have lost connection"
-  [msg] (< (msg :time) (- (System/currentTimeMillis) 300000)))
+  [msg] (< (.getJMSTimestamp msg) (- (System/currentTimeMillis) 300000)))
 
 (defn removeDeadSlavesLoop []
   (ThreadUtils/onThread
@@ -381,8 +381,3 @@
       (.setDefaultCloseOperation (JFrame/EXIT_ON_CLOSE))
       (.setJMenuBar menuBar)
       (.setVisible true))))
-
-;(defn -main []
-;  (let [canvas (Graph/getTestCanvas)
-;          rmsError 0.4]
-;      (launchGraphWindow canvas (new JButton "Save") rmsError)))

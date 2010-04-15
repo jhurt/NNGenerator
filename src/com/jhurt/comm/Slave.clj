@@ -12,26 +12,64 @@
 (ns
   #^{:author "Jason Lee Hurt"}
   com.jhurt.comm.Slave
+  (:gen-class)
+  (:require [com.jhurt.nn.trainer.XOR :as XOR])
   (:require [com.jhurt.ThreadUtils :as ThreadUtils])
-  (:require [com.jhurt.comm.Comm :as Comm]))
+  (:require [com.jhurt.comm.Comm :as Comm])
+  (:use [com.jhurt.Serialization]))
 
 (import
-  '(javax.jms Message MessageListener)
+  '(javax.jms MessageListener)
   '(org.apache.activemq ActiveMQConnection))
 
-; publisher for master msg queue
-(def publisher (ref nil))
-; subscriber for slaves' msg queue
-(def subscriber (ref nil))
+(def myName (ref nil))
+(def masterPublisher (ref nil))
+(def slavesSubscriber (ref nil))
+(def doHeartbeat (ref nil))
 
-(def dfltMsgListener (proxy [MessageListener] []
-  (onMessage [#^Message message]
-    (println "Received msg: " (.getText message)))))
+;loop as long as a pipe is available, sending a heartbeat message every 2 minutes
+(defn heartbeatLoop []
+  (dosync (ref-set doHeartbeat true))
+  (ThreadUtils/onThread
+    #(while @doHeartbeat
+      (do
+        (Comm/heartbeat @myName @masterPublisher)
+        (Thread/sleep 60000)))))
+
+(defn trainNetworkCallback
+  "called after a network has been trained by a trainer"
+  [weights error generation layers alpha gamma]
+  (let [; this is a small hack because serializing NaN and deserializing it will result
+        ; in a symbol instead of Double/NaN, so we send 1.0 in the case of NaN
+        ; this should ideally be fixed in Clojure at some point
+        e (if (> error 0.0) error 1.0)
+        msg {:weights weights :error e :generation generation :layers layers :alpha alpha :gamma gamma}]
+    (Comm/publishMessage @masterPublisher Comm/FINISH_TRAIN_XOR (serialize msg))))
+
+;a multimethod for handling incoming messages
+;the dispatch function is the name of the message
+(defmulti handleIncomingMessage (fn [msg] (.getStringProperty msg "name")))
+
+(defmethod handleIncomingMessage Comm/TRAIN_XOR
+  [msg]
+  (println "\n\nslave received train xor msg: " (.getText msg))
+  (let [trainMsg (deserialize (.getText msg))]
+    (XOR/train
+      (trainMsg :layers) (trainMsg :training-cycles) (trainMsg :generation) (trainMsg :alpha) (trainMsg :gamma) trainNetworkCallback)))
+
+(def dfltMessageListener (proxy [MessageListener] []
+  (onMessage [message]
+    (handleIncomingMessage message))))
 
 (defn start [slaveName]
   (let [url ActiveMQConnection/DEFAULT_BROKER_URL
-        connection (Comm/getNewConnection url)]
+        connection (doto (Comm/getNewConnection url) (.setClientID slaveName))]
     (.start connection)
     (dosync
-      (ref-set publisher (Comm/getPublisher connection Comm/MASTER_QUEUE_NAME))
-      (ref-set subscriber (Comm/getSubscriber connection Comm/SLAVES_QUEUE_NAME slaveName dfltMsgListener)))))
+      (ref-set myName slaveName)
+      (ref-set masterPublisher (Comm/getPublisher connection Comm/MASTER_QUEUE_NAME))
+      (ref-set slavesSubscriber (Comm/getSubscriber connection Comm/SLAVES_QUEUE_NAME dfltMessageListener)))
+    (heartbeatLoop)))
+
+(defn -main [& args]
+    (start (first args)))

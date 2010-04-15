@@ -43,18 +43,18 @@
       (doto (.createProducer session destination) (.setDeliveryMode DeliveryMode/PERSISTENT))
       session)))
 
-(defn getSubscriber [connection queueName clientId msgListener]
-  (let [c (doto connection (.setClientID clientId) (.setExceptionListener dfltExceptionListener))
-        session (.createSession connection false Session/AUTO_ACKNOWLEDGE)
+(defn getSubscriber [connection queueName msgListener]
+  (let [c (doto connection (.setExceptionListener dfltExceptionListener))
+        session (.createSession c false Session/AUTO_ACKNOWLEDGE)
         destination (.createQueue session queueName)
-        consumer (doto (.createConsumer session destination) msgListener)
+        consumer (doto (.createConsumer session destination) (.setMessageListener msgListener))
         producer (doto (.createProducer session nil) (.setDeliveryMode DeliveryMode/NON_PERSISTENT))]
     (struct Subscriber consumer producer session)))
 
 (defn heartbeat [clientId publisher]
   (let [producer (publisher :producer)
         session (publisher :session)
-        m (doto (.createTextMessage session "hb") (.setStringProperty "name" name) (.setStringProperty "clientId" clientId))]
+        m (doto (.createTextMessage session "hb") (.setStringProperty "name" HEARTBEAT) (.setStringProperty "clientId" clientId))]
     (.send producer m)))
 
 (defn publishMessage

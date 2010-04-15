@@ -21,7 +21,7 @@
 
 (defn start [msgListener]
   (let [url ActiveMQConnection/DEFAULT_BROKER_URL
-        connection (Comm/getNewConnection url)]
+        connection (doto (Comm/getNewConnection url) (.setClientID "Master"))]
     (.start connection)
     {:publisher (Comm/getPublisher connection Comm/SLAVES_QUEUE_NAME)
-     :subscriber (Comm/getSubscriber connection Comm/MASTER_QUEUE_NAME "Master" msgListener)}))
+     :subscriber (Comm/getSubscriber connection Comm/MASTER_QUEUE_NAME msgListener)}))
