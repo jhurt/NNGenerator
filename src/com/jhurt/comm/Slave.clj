@@ -19,8 +19,7 @@
   (:use [com.jhurt.Serialization]))
 
 (import
-  '(javax.jms MessageListener)
-  '(org.apache.activemq ActiveMQConnection))
+  '(javax.jms MessageListener))
 
 (def myName (ref nil))
 (def masterPublisher (ref nil))
@@ -61,9 +60,8 @@
   (onMessage [message]
     (handleIncomingMessage message))))
 
-(defn start [slaveName]
-  (let [url ActiveMQConnection/DEFAULT_BROKER_URL
-        connection (doto (Comm/getNewConnection url) (.setClientID slaveName))]
+(defn start [slaveName brokerIp brokerPort]
+  (let [connection (doto (Comm/getNewConnection brokerIp brokerPort) (.setClientID slaveName))]
     (.start connection)
     (dosync
       (ref-set myName slaveName)
@@ -72,4 +70,4 @@
     (heartbeatLoop)))
 
 (defn -main [& args]
-    (start (first args)))
+  (start (nth args 0) (nth args 1) (nth args 2)))

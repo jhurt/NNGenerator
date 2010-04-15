@@ -16,12 +16,10 @@
   (:require [com.jhurt.comm.Comm :as Comm]))
 
 (import
-  '(javax.jms Message MessageListener)
-  '(org.apache.activemq ActiveMQConnection))
+  '(javax.jms Message MessageListener))
 
-(defn start [msgListener]
-  (let [url ActiveMQConnection/DEFAULT_BROKER_URL
-        connection (doto (Comm/getNewConnection url) (.setClientID "Master"))]
+(defn start [msgListener brokerIp brokerPort]
+  (let [connection (doto (Comm/getNewConnection brokerIp brokerPort) (.setClientID "Master"))]
     (.start connection)
     {:publisher (Comm/getPublisher connection Comm/SLAVES_QUEUE_NAME)
      :subscriber (Comm/getSubscriber connection Comm/MASTER_QUEUE_NAME msgListener)}))

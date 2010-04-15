@@ -1,8 +1,8 @@
 #!/bin/bash
 
-usage() { printf "Usage $0 <slave_name>\n" >&2; }
+usage() { printf "Usage $0 <slave_name> <jms_broker_ip> <jms_broker_port>\n" >&2; }
 
-if [ $# -lt 1 ]
+if [ $# -lt 3 ]
 then
     usage
     exit 1

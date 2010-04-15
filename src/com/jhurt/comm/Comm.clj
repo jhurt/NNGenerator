@@ -31,8 +31,9 @@
   (onException [#^JMSException exception]
     (println (str "JMS Exception for client " (.getMessage exception))))))
 
-(defn getNewConnection [url]
-  (let [connectionFactory (new ActiveMQConnectionFactory ActiveMQConnection/DEFAULT_USER ActiveMQConnection/DEFAULT_PASSWORD url)]
+(defn getNewConnection [ip port]
+  (let [url (str "failover://tcp://" ip ":" port)
+    connectionFactory (new ActiveMQConnectionFactory ActiveMQConnection/DEFAULT_USER ActiveMQConnection/DEFAULT_PASSWORD url)]
     ;ActiveMQConnection/DEFAULT_BROKER_URL)
     (.createConnection connectionFactory)))
 

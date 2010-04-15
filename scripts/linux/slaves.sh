@@ -1,13 +1,13 @@
 #!/bin/bash
 
-usage() { printf "Usage $0 <number_of_slaves>\n" >&2; }
+usage() { printf "Usage $0 <number_of_slaves> <jms_broker_ip> <jms_broker_port>\n" >&2; }
 
-if [ $# -lt 1 ]
+if [ $# -lt 3 ]
 then
     usage
     exit 1
 fi
 
 for (( i=1;i<=$1;i+=1 )) ;
-do java -cp nn.jar:activemq-all-5.3.1.jar:piccolo.jar:clojure.jar com.jhurt.comm.Slave slave$i &
+do java -cp nn.jar:activemq-all-5.3.1.jar:piccolo.jar:clojure.jar com.jhurt.comm.Slave slave$i $2 $3 &
 done;

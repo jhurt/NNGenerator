@@ -38,6 +38,8 @@
 (def slavesPublisher (ref nil))
 (def clientIdToLastMsgMap (ref (sorted-map)))
 (def generationToResults (ref {}))
+(def jmsBrokerIp (ref "127.0.0.1"))
+(def jmsBrokerPort (ref "61616"))
 
 ;immutable state
 (def masterButton (new JButton "Connect Master"))
@@ -234,7 +236,7 @@
       (.setEnabled masterButton false)
       (ThreadUtils/onThread
         (fn []
-          (let [endpoints (Master/start dfltMessageListener)]
+          (let [endpoints (Master/start dfltMessageListener @jmsBrokerIp @jmsBrokerPort)]
             (dosync (ref-set masterSubscriber (endpoints :subscriber))
               (ref-set slavesPublisher (endpoints :publisher))))
           (SwingUtils/doOnEdt
@@ -373,6 +375,7 @@
 
 (defn -main [& args]
   (let [frame (new JFrame "Neural Network UI")]
+    (dosync (ref-set jmsBrokerIp (first args)) (ref-set jmsBrokerPort (nth args 1)))
     (removeDeadSlavesLoop)
     (SwingUtils/setSizeBasedOnResolution frame)
     (layoutTopLeftPanel)
