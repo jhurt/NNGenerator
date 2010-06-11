@@ -1,0 +1,19 @@
+Software for generating NN to solve problems. Written in Clojure.
+
+To build: 
+
+1. %> ant dist
+
+To run slave(s): 
+
+1. Make sure a JMS broker is running
+2. %>slaves.sh <number_of_slaves> <jms_broker_ip> <jms_broker_port>
+
+To run master:
+
+1. Make sure a JMS broker is running
+2. %>nn-generator.sh <jms_broker_ip> <jms_broker_port>
+
+To start ActiveMQ JMS broker:
+
+1. %> <active_mq_home>/bin/activemq
