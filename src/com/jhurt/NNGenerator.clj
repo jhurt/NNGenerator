@@ -210,22 +210,6 @@
   (onMessage [message]
     (handleIncomingMessage message))))
 
-(defn messageIsOld
-  "return true if the message is old enough that the sender can be
-  considered to have lost connection"
-  [msg] (< (.getJMSTimestamp msg) (- (System/currentTimeMillis) 300000)))
-
-(defn removeDeadSlavesLoop []
-  (ThreadUtils/onThread
-    #(while true
-      (do
-        (doall (map (fn [msg] (if (messageIsOld msg)
-          (do
-            (dosync (ref-set clientIdToLastMsgMap (dissoc @clientIdToLastMsgMap (.getStringProperty msg "clientId"))))
-            (updateConnectedPeers))))
-          (vals @clientIdToLastMsgMap)))
-        (Thread/sleep 120000)))))
-
 ;forward declaration
 (declare disconnectMasterListener)
 
@@ -376,7 +360,6 @@
 (defn -main [& args]
   (let [frame (new JFrame "Neural Network UI")]
     (dosync (ref-set jmsBrokerIp (first args)) (ref-set jmsBrokerPort (nth args 1)))
-    (removeDeadSlavesLoop)
     (SwingUtils/setSizeBasedOnResolution frame)
     (layoutTopLeftPanel)
     (.. frame (getContentPane) (add splitPane))

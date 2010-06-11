@@ -43,6 +43,7 @@
         ; this should ideally be fixed in Clojure at some point
         e (if (> error 0.0) error 1.0)
         msg {:weights weights :error e :generation generation :layers layers :alpha alpha :gamma gamma}]
+    (println "\n\n***TRAINED NETWORK error " e " alpha " alpha " gamma " gamma)
     (Comm/publishMessage @masterPublisher Comm/FINISH_TRAIN_XOR (serialize msg))))
 
 ;a multimethod for handling incoming messages

@@ -66,4 +66,4 @@
         m (doto (.createTextMessage session content) (.setStringProperty "name" name))]
     (.send producer m)))
 
-(defn close [endpoint] (.close endpoint))
+(defn close [endpoint] (.close (endpoint :session)))

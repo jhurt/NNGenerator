@@ -50,12 +50,12 @@
             (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
               {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
                :activation-fn (activationFns :activation-fn)
-               :derivative-fn (activationFns :activation-fn)}))
+               :derivative-fn (activationFns :derivative-fn)}))
           (butlast layersNN1) (butlast layersNN2)))
         activationFns (getActivationFns (last layersNN1) (last layersNN2))
         lastLayer {:number-of-nodes ((last layersNN1) :number-of-nodes)
                    :activation-fn (activationFns :activation-fn)
-                   :derivative-fn (activationFns :activation-fn)}]
+                   :derivative-fn (activationFns :derivative-fn)}]
     (conj newLayers lastLayer)))
 
 (defn crossover2
@@ -71,13 +71,13 @@
             (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
               {:number-of-nodes (int (* 0.5 (+ (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes))))
                :activation-fn (activationFns :activation-fn)
-               :derivative-fn (activationFns :activation-fn)}))
+               :derivative-fn (activationFns :derivative-fn)}))
           layersNN1 layersNN2))
         middleLayers (butlast (CU/removeFirstN largestLayers numToRemove))
         activationFns (getActivationFns (last layersNN1) (last layersNN2))
         lastLayer {:number-of-nodes ((last layersNN1) :number-of-nodes)
                    :activation-fn (activationFns :activation-fn)
-                   :derivative-fn (activationFns :activation-fn)}]
+                   :derivative-fn (activationFns :derivative-fn)}]
     (conj (vec (concat firstLayers middleLayers)) lastLayer)))
 
 (defn crossoverLayers [layersNN1 layersNN2]
