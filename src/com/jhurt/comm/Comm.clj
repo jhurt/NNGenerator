@@ -22,6 +22,8 @@
 
 (def TRAIN_XOR "trainXOR")
 (def FINISH_TRAIN_XOR "finishTrainXOR")
+(def TRAIN_OCR "trainOCR")
+(def FINISH_TRAIN_OCR "finishTrainOCR")
 (def HEARTBEAT "hb")
 
 (defstruct Publisher :producer :session)
