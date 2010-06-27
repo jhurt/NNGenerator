@@ -63,6 +63,11 @@
             <arg value="com.jhurt.comm.Master" />
             <arg value="com.jhurt.comm.Slave" />
 
+            <arg value="com.jhurt.ga.GA" />
+
+            <arg value="com.jhurt.image.FFT" />
+            <arg value="com.jhurt.image.ImageUtils" />
+
 			<arg value="com.jhurt.nn.ActivationFunctions" />
 			<arg value="com.jhurt.nn.BackPropagation" />
             <arg value="com.jhurt.nn.Common" />
@@ -75,13 +80,13 @@
             <arg value="com.jhurt.nn.trainer.FacialRecognition" />
             <arg value="com.jhurt.nn.trainer.XOR" />
 
-            <arg value="com.jhurt.ga.GA" />
-
             <arg value="com.jhurt.CollectionsUtils" />
+            <arg value="com.jhurt.FileUtils" />
             <arg value="com.jhurt.Graph" />
             <arg value="com.jhurt.Math" />
             <arg value="com.jhurt.NNGenerator" />
             <arg value="com.jhurt.Plot3D" />
+            <arg value="com.jhurt.Serialization" />
             <arg value="com.jhurt.SwingUtils" />
             <arg value="com.jhurt.ThreadUtils" />
             <arg value="com.jhurt.UI" />
