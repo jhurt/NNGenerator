@@ -16,7 +16,9 @@
   com.jhurt.image.FFT
   (:use [com.jhurt.image.ImageUtils]))
 
-(defn combine [N qs rs]
+(defn combine
+  "combine the results of each radix split"
+  [N qs rs]
   (loop [k 0
          y1 []
          y2 []
@@ -26,27 +28,71 @@
       (let [kth (/ (* -2.0 k Math/PI) N)
             wreal (Math/cos kth)
             wimag (Math/sin kth)
-            r (first rs)
             q (first qs)
-            treal (- (* wreal (:real r)) (* wimag (:imag r)))
-            timag (+ (* wreal (:imag r)) (* wimag (:real r)))
-            y1real (+ (:real q) treal)
-            y1imag (+ (:imag q) timag)
-            y2real (- (:real q) treal)
-            y2imag (- (:imag q) timag)]
+            r (first rs)
+            treal (- (* wreal (r :real)) (* wimag (r :imag)))
+            timag (+ (* wreal (r :imag)) (* wimag (r :real)))
+            y1real (+ (q :real) treal)
+            y1imag (+ (q :imag) timag)
+            y2real (- (q :real) treal)
+            y2imag (- (q :imag) timag)]
         (recur
           (inc k)
-          (conj y1 (struct (Complex y1real y1imag)))
-          (conj y2 (struct (Complex y2real y2imag)))
+          (conj y1 (struct Complex y1real y1imag))
+          (conj y2 (struct Complex y2real y2imag))
           (rest qs)
           (rest rs))))))
 
-(defn fft [x]
+(defn fft
+  "compute the FFT of a set of Complex values x"
+  [x]
   (let [N (count x)]
-    (if (= 1 N) (vector (first x)))
-    (assert (= 0 (mod N 2)))
-    (let [even (take-nth 2 x)
-          odd (take-nth 2 (rest x))
-          qs (fft even (count even))
-          rs (fft odd (count odd))]
-      (combine (count qs) qs rs))))
+    (if (= 1 N) (vector (first x))
+      (do
+        (assert (= 0 (mod N 2)))
+        (let [even (take-nth 2 x)
+              odd (take-nth 2 (rest x))
+              qs (fft even)
+              rs (fft odd)]
+          (combine (count qs) qs rs))))))
+
+; public static Complex[] cconvolve(Complex[] x, Complex[] y) {
+;
+;    // should probably pad x and y with 0s so that they have same length
+;    // and are powers of 2
+;    if (x.length != y.length) {
+;      throw new RuntimeException("Dimensions don't agree");
+;    }
+;
+;    int N = x.length;
+;
+;    // compute FFT of each sequence
+;    Complex[] a = fft(x);
+;    Complex[] b = fft(y);
+;
+;    // point-wise multiply
+;    Complex[] c = new Complex[N];
+;    for (int i = 0; i < N; i++) {
+;      c[i] = a[i].times(b[i]);
+;    }
+;
+;    // compute inverse FFT
+;    return ifft(c);
+;  }
+;
+;
+;  // compute the linear convolution of x and y
+;
+;  public static Complex[] convolve(Complex[] x, Complex[] y) {
+;    Complex ZERO = new Complex(0, 0);
+;
+;    Complex[] a = new Complex[2 * x.length];
+;    for (int i = 0; i < x.length; i++) a[i] = x[i];
+;    for (int i = x.length; i < 2 * x.length; i++) a[i] = ZERO;
+;
+;    Complex[] b = new Complex[2 * y.length];
+;    for (int i = 0; i < y.length; i++) b[i] = y[i];
+;    for (int i = y.length; i < 2 * y.length; i++) b[i] = ZERO;
+;
+;    return cconvolve(a, b);
+;  }

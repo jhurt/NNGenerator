@@ -66,6 +66,7 @@
             <arg value="com.jhurt.ga.GA" />
 
             <arg value="com.jhurt.image.FFT" />
+            <arg value="com.jhurt.image.ImageUI" />
             <arg value="com.jhurt.image.ImageUtils" />
 
 			<arg value="com.jhurt.nn.ActivationFunctions" />

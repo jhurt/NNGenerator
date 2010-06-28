@@ -14,25 +14,94 @@
   com.jhurt.image.ImageUtils)
 
 (import
-  '(java.awt.image BufferedImage)
+  '(java.awt.image BufferedImage FilteredImageSource)
   '(javax.imageio ImageIO)
-  '(javax.swing GrayFilter))
+  '(javax.swing GrayFilter JFrame))
 
 (defstruct Complex :real :imag)
 
 (defn getImageFromFile [f] (ImageIO/read f))
 
-(defn grayscaleImage [img] (let [g (GrayFilter/createDisabledImage img)]
-  (if (instance? BufferedImage g) g
-    (.getBufferedImage g))))
+(def grayFilter (new GrayFilter false 50))
 
-(defn getComplexValues [img]
+(defn- getGrayValue
+  "return the grayscale value of a specified coordinate of a grayscale BufferedImage"
+  [img i j]
+  (.getRed (.getColorModel img) (.getDataElements (.getRaster img) i j nil)))
+
+(defn- getRGB
+  "return the Red value of a specified coordinate of a grayscale BufferedImage"
+  [img i j]
+  (let [colorModel (.getColorModel img)
+        dataElements (.getDataElements (.getRaster img) i j nil)]
+    (int-array (list (.getRed colorModel dataElements)
+      (.getGreen colorModel dataElements)
+      (.getBlue colorModel dataElements)))))
+
+(defn- setGrayValue
+  "sets the grayscale value of a BufferedImage"
+  [img i j val]
+  (.setPixel (.getRaster img) i j (int-array [val val val])))
+
+;int red = (pixel >> 16) & 0xff;
+;int green = (pixel >> 8) & 0xff;
+;int blue = (pixel) & 0xff;
+
+(defn grayscaleImage
+  "return a grayscale BufferedImage representation of an RGB BufferedImage"
+  [img]
+  (loop [i 0
+         j 0
+         grayImage (new BufferedImage (.getWidth img) (.getHeight img) BufferedImage/TYPE_BYTE_GRAY)]
+    (if (= (.getWidth img) i) grayImage
+      (do
+        (let [RGB (getRGB img i j)]
+          (setGrayValue grayImage i j (/ (+ (nth RGB 0) (nth RGB 1) (nth RGB 2)) 3.0))
+          (if (= (dec (.getHeight img)) j)
+            (recur (inc i) 0 grayImage)
+            (recur i (inc j) grayImage)))))))
+
+(defn getComplexValues
+  "return a set of complex values whose real parts are the
+grayscale value of a particular image coordinate and imaginary parts are 0"
+  [img]
   (loop [i 0
          j 0
          vals []]
     (if (= (.getWidth img) i) vals
-      (let [val (struct Complex (.getRGB img i j) 0)]
+      (let [val (struct Complex (getGrayValue img i j) 0)]
         (if (= (dec (.getHeight img)) j)
           (recur (inc i) 0 (conj vals val))
           (recur i (inc j) (conj vals val)))))))
 
+(defn- buildImage
+  [cs img calcFn]
+  (loop [cs cs
+         i 0
+         j 0]
+    (if (= (.getWidth img) i) img
+      (let [val (calcFn (first cs))]
+        (setGrayValue img i j val)
+        (if (= (dec (.getHeight img)) j)
+          (recur (rest cs) (inc i) 0)
+          (recur (rest cs) i (inc j)))))))
+
+;PHASE(F) = ATAN( IMAGINARY(F)/REAL(F) )
+(defn- calcPhase [c] (Math/atan (/ (c :imag) (c :real))))
+
+;MAGNITUDE(F) = SQRT( REAL(F)^2+IMAGINARY(F)^2 )
+(defn- calcMag [c] (Math/sqrt (+ (* (c :real) (c :real)) (* (c :imag) (c :imag)))))
+
+(defn getPhaseImage [c]
+  ;make sure it's a perfect square
+  (assert (= 0 (mod (count c) (Math/sqrt (count c)))))
+  (let [x (int (Math/sqrt (count c)))
+        img (new BufferedImage x x BufferedImage/TYPE_BYTE_GRAY)]
+    (buildImage c img calcPhase)))
+
+(defn getMagnitudeImage [c]
+  ;make sure it's a perfect square
+  (assert (= 0 (mod (count c) (Math/sqrt (count c)))))
+  (let [x (int (Math/sqrt (count c)))
+        img (new BufferedImage x x BufferedImage/TYPE_BYTE_GRAY)]
+    (buildImage c img calcMag)))
