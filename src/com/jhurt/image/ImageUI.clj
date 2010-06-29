@@ -28,19 +28,20 @@
 (def image (ref nil))
 (def imageFrame (new JFrame))
 
-(def imagePanel
+(defn getImagePanel [img]
   (proxy [JPanel] []
     (paintComponent [g]
       (proxy-super paintComponent g)
-      (.drawImage g (deref image) 0 0 nil))))
+      (.drawImage g img 0 0 nil))))
 
 (defn openImage [imageFile]
   (let [bufferedImage (. ImageIO (read imageFile))]
     (dosync (ref-set image bufferedImage))
     (doto imageFrame
+      (.setTitle (.getName imageFile))
       (.setVisible false)
       (.setSize (.getWidth bufferedImage) (.getHeight bufferedImage))
-      (.add imagePanel)
+      (.add (getImagePanel bufferedImage))
       (.setVisible true))))
 
 (def imageFileFilter (proxy [FileFilter] []
@@ -62,23 +63,37 @@
   (.addActionListener
     (proxy [ActionListener] []
       (actionPerformed [e]
-        (dosync (ref-set image (grayscaleImage @image)))
-        (.repaint imageFrame)
-        (.requestFocus imageFrame))))))
+        (let [img (grayscaleImage @image)]
+          (doto (new JFrame "Grayscale")
+            (.setSize (.getWidth img) (.getHeight img))
+            (.add (getImagePanel img))
+            (.setVisible true)
+            (.repaint)
+            (.requestFocus))))))))
 
 (def fftPhaseButton (doto (new JButton "FFT Phase")
   (.addActionListener
     (proxy [ActionListener] []
       (actionPerformed [e]
-        (dosync (ref-set image (getPhaseImage (fft (getComplexValues (grayscaleImage @image)))))
-          (doto imageFrame (.repaint) (.requestFocus))))))))
+        (let [img (getPhaseImage (fft (getComplexValues (grayscaleImage @image))))]
+          (doto (new JFrame "FFT Phase")
+            (.setSize (.getWidth img) (.getHeight img))
+            (.add (getImagePanel img))
+            (.setVisible true)
+            (.repaint)
+            (.requestFocus))))))))
 
 (def fftMagButton (doto (new JButton "FFT Magnitude")
   (.addActionListener
     (proxy [ActionListener] []
       (actionPerformed [e]
-        (dosync (ref-set image (getMagnitudeImage (fft (getComplexValues (grayscaleImage @image)))))
-          (doto imageFrame (.repaint) (.requestFocus))))))))
+        (let [img (getMagnitudeImage (fft (getComplexValues (grayscaleImage @image))))]
+          (doto (new JFrame "FFT Magnitude")
+            (.setSize (.getWidth img) (.getHeight img))
+            (.add (getImagePanel img))
+            (.setVisible true)
+            (.repaint)
+            (.requestFocus))))))))
 
 (def buttonPanel (doto (new JPanel)
   (.add openButton)

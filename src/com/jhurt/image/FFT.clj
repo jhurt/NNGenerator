@@ -13,7 +13,7 @@
 
 (ns
   #^{:author "Jason Lee Hurt"}
-  com.jhurt.image.FFT
+  com.jhurt.image.FFT                                                                                       
   (:use [com.jhurt.image.ImageUtils]))
 
 (defn combine
@@ -25,7 +25,7 @@
          qs qs
          rs rs]
     (if (= N k) (concat y1 y2)
-      (let [kth (/ (* -2.0 k Math/PI) N)
+      (let [kth (/ (* -1 k Math/PI) N)
             wreal (Math/cos kth)
             wimag (Math/sin kth)
             q (first qs)
@@ -47,7 +47,7 @@
   "compute the FFT of a set of Complex values x"
   [x]
   (let [N (count x)]
-    (if (= 1 N) (vector (first x))
+    (if (= 1 N) [(first x)]
       (do
         (assert (= 0 (mod N 2)))
         (let [even (take-nth 2 x)
@@ -55,44 +55,3 @@
               qs (fft even)
               rs (fft odd)]
           (combine (count qs) qs rs))))))
-
-; public static Complex[] cconvolve(Complex[] x, Complex[] y) {
-;
-;    // should probably pad x and y with 0s so that they have same length
-;    // and are powers of 2
-;    if (x.length != y.length) {
-;      throw new RuntimeException("Dimensions don't agree");
-;    }
-;
-;    int N = x.length;
-;
-;    // compute FFT of each sequence
-;    Complex[] a = fft(x);
-;    Complex[] b = fft(y);
-;
-;    // point-wise multiply
-;    Complex[] c = new Complex[N];
-;    for (int i = 0; i < N; i++) {
-;      c[i] = a[i].times(b[i]);
-;    }
-;
-;    // compute inverse FFT
-;    return ifft(c);
-;  }
-;
-;
-;  // compute the linear convolution of x and y
-;
-;  public static Complex[] convolve(Complex[] x, Complex[] y) {
-;    Complex ZERO = new Complex(0, 0);
-;
-;    Complex[] a = new Complex[2 * x.length];
-;    for (int i = 0; i < x.length; i++) a[i] = x[i];
-;    for (int i = x.length; i < 2 * x.length; i++) a[i] = ZERO;
-;
-;    Complex[] b = new Complex[2 * y.length];
-;    for (int i = 0; i < y.length; i++) b[i] = y[i];
-;    for (int i = y.length; i < 2 * y.length; i++) b[i] = ZERO;
-;
-;    return cconvolve(a, b);
-;  }

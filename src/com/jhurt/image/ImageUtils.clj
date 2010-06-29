@@ -68,23 +68,23 @@ grayscale value of a particular image coordinate and imaginary parts are 0"
   (loop [i 0
          j 0
          vals []]
-    (if (= (.getWidth img) i) vals
+    (if (= (.getHeight img) j) vals
       (let [val (struct Complex (getGrayValue img i j) 0)]
-        (if (= (dec (.getHeight img)) j)
-          (recur (inc i) 0 (conj vals val))
-          (recur i (inc j) (conj vals val)))))))
+        (if (= (dec (.getWidth img)) i)
+          (recur 0 (inc j) (conj vals val))
+          (recur (inc i) j (conj vals val)))))))
 
 (defn- buildImage
   [cs img calcFn]
   (loop [cs cs
          i 0
          j 0]
-    (if (= (.getWidth img) i) img
+    (if (= (.getHeight img) j) img
       (let [val (calcFn (first cs))]
         (setGrayValue img i j val)
-        (if (= (dec (.getHeight img)) j)
-          (recur (rest cs) (inc i) 0)
-          (recur (rest cs) i (inc j)))))))
+        (if (= (dec (.getWidth img)) i)
+          (recur (rest cs) 0 (inc j))
+          (recur (rest cs) (inc i) j))))))
 
 ;PHASE(F) = ATAN( IMAGINARY(F)/REAL(F) )
 (defn- calcPhase [c] (Math/atan (/ (c :imag) (c :real))))
