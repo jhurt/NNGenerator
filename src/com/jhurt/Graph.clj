@@ -13,7 +13,6 @@
   #^{:author "Jason Lee Hurt"}
   com.jhurt.Graph
   (:gen-class)
-  (:require [com.jhurt.CollectionsUtils :as CU])
   (:require [com.jhurt.ga.GA :as GA])
   (:require [com.jhurt.nn.Common :as Common]))
 
@@ -58,7 +57,7 @@
 (defn addNodesToCanvas
   "add the nodes from all nn layers to the PCanvas"
   [nodeLayer nodes]
-  (loop [n (CU/flatten nodes)]
+  (loop [n (flatten nodes)]
     (if (seq n)
       (do (.addChild nodeLayer (first n))
         (recur (rest n))))))
@@ -80,7 +79,7 @@
 (defn addEdgesToCanvas
   "add the edges to the PCanvas"
   [edgeLayer edges]
-  (loop [e (CU/flatten edges)]
+  (loop [e (flatten edges)]
     (if (seq e)
       (do
         (.addChild edgeLayer (first e))
@@ -112,7 +111,7 @@
 
 (defn drawWeights [edgeLayer edges weights]
   (println "count edges: " (count edges) " count weights: " (count weights))
-  (loop [e (CU/flatten edges) w (CU/flatten weights)]
+  (loop [e (flatten edges) w (flatten weights)]
     (if (and (seq e) (seq w))
       (do
         (let [edge (first e)

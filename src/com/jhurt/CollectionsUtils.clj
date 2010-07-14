@@ -26,16 +26,6 @@
 (defn structmapToHashmap [s]
   (zipmap (keys s) (vals s)))
 
-;; 'flatten' written by Rich Hickey,
-;; see http://groups.google.com/group/clojure/msg/385098fabfcaad9b
-(defn flatten
-  "Takes any nested combination of sequential things (lists, vectors,
-  etc.) and returns their contents as a single, flat sequence.
-  (flatten nil) returns nil."
-  [x]
-  (filter (complement sequential?)
-          (rest (tree-seq sequential? seq x))))
-
 (defn removeFirstN
   "return a collection with the first n elements of the
   passed in collection removed"
