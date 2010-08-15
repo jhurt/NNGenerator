@@ -13,6 +13,8 @@
   #^{:author "Jason Lee Hurt"}
   com.jhurt.image.ImageUI
   (:gen-class)
+  (:require [com.jhurt.SwingUtils :as SwingUtils])
+  (:require [com.jhurt.ThreadUtils :as ThreadUtils])
   (:use com.jhurt.image.FFT)
   (:use com.jhurt.image.ImageUtils))
 
@@ -26,7 +28,7 @@
   '(java.awt Graphics))
 
 (def image (ref nil))
-(def imageFrame (new JFrame))
+(def imageFrame (ref nil))
 
 (defn getImagePanel [img]
   (proxy [JPanel] []
@@ -36,10 +38,11 @@
 
 (defn openImage [imageFile]
   (let [bufferedImage (. ImageIO (read imageFile))]
-    (dosync (ref-set image bufferedImage))
-    (doto imageFrame
-      (.setTitle (.getName imageFile))
+    (if-not (nil? @imageFrame) (.dispose @imageFrame))
+    (dosync (ref-set image bufferedImage) (ref-set imageFrame (new JFrame)))
+    (doto @imageFrame
       (.setVisible false)
+      (.setTitle (.getName imageFile))
       (.setSize (.getWidth bufferedImage) (.getHeight bufferedImage))
       (.add (getImagePanel bufferedImage))
       (.setVisible true))))
@@ -63,43 +66,53 @@
   (.addActionListener
     (proxy [ActionListener] []
       (actionPerformed [e]
-        (let [img (grayscaleImage @image)]
-          (doto (new JFrame "Grayscale")
-            (.setSize (.getWidth img) (.getHeight img))
-            (.add (getImagePanel img))
-            (.setVisible true)
-            (.repaint)
-            (.requestFocus))))))))
+        (ThreadUtils/onThread (fn []
+          (let [img (grayscaleImage @image)
+                frame (new JFrame "Grayscale")]
+            (doto frame
+              (.setSize (.getWidth img) (.getHeight img))
+              (.add (getImagePanel img)))
+            (SwingUtils/doOnEdt #(doto frame
+              (.setVisible true)
+              (.repaint)
+              (.requestFocus)))))))))))
 
 (def fftPhaseButton (doto (new JButton "FFT Phase")
   (.addActionListener
     (proxy [ActionListener] []
       (actionPerformed [e]
-        (let [img (getPhaseImage (fft (getComplexValues (grayscaleImage @image))))]
-          (doto (new JFrame "FFT Phase")
-            (.setSize (.getWidth img) (.getHeight img))
-            (.add (getImagePanel img))
-            (.setVisible true)
-            (.repaint)
-            (.requestFocus))))))))
+        (ThreadUtils/onThread (fn []
+          (let [vals (getComplexValues (grayscaleImage @image))
+                img (getPhaseImage (fft vals))
+                frame (new JFrame "FFT Phase")]
+            (doto frame
+              (.setSize (.getWidth img) (.getHeight img))
+              (.add (getImagePanel img)))
+            (SwingUtils/doOnEdt #(doto frame
+              (.setVisible true)
+              (.repaint)
+              (.requestFocus)))))))))))
 
 (def fftMagButton (doto (new JButton "FFT Magnitude")
   (.addActionListener
     (proxy [ActionListener] []
       (actionPerformed [e]
-        (let [img (getMagnitudeImage (fft (getComplexValues (grayscaleImage @image))))]
-          (doto (new JFrame "FFT Magnitude")
-            (.setSize (.getWidth img) (.getHeight img))
-            (.add (getImagePanel img))
-            (.setVisible true)
-            (.repaint)
-            (.requestFocus))))))))
+        (ThreadUtils/onThread (fn []
+          (let [img (getMagnitudeImage (fft (getComplexValues (grayscaleImage @image))))
+                frame (new JFrame "FFT Magnitude")]
+            (doto frame
+              (.setSize (.getWidth img) (.getHeight img))
+              (.add (getImagePanel img)))
+            (SwingUtils/doOnEdt #(doto frame
+              (.setVisible true)
+              (.repaint)
+              (.requestFocus)))))))))))
 
 (def buttonPanel (doto (new JPanel)
   (.add openButton)
   (.add grayscaleButton)
-  (.add fftPhaseButton)
-  (.add fftMagButton)))
+  (.add fftMagButton)
+  (.add fftPhaseButton)))
 
 (defn -main [s] (doto (new JFrame "Image UI")
   (.setDefaultCloseOperation (JFrame/EXIT_ON_CLOSE))

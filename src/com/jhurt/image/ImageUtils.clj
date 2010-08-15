@@ -62,17 +62,18 @@
             (recur i (inc j) grayImage)))))))
 
 (defn getComplexValues
-  "return a set of complex values whose real parts are the
+  "return an vector of vectors of complex values whose real parts are the
 grayscale value of a particular image coordinate and imaginary parts are 0"
   [img]
   (loop [i 0
          j 0
-         vals []]
-    (if (= (.getHeight img) j) vals
-      (let [val (struct Complex (getGrayValue img i j) 0)]
+         wvals []
+         allVals []]
+    (if (= (.getHeight img) j) allVals
+      (let [val (struct Complex (getGrayValue img i j) 0.0)]
         (if (= (dec (.getWidth img)) i)
-          (recur 0 (inc j) (conj vals val))
-          (recur (inc i) j (conj vals val)))))))
+          (recur 0 (inc j) [] (conj allVals (conj wvals val)))
+          (recur (inc i) j (conj wvals val) allVals))))))
 
 (defn- buildImage
   [cs img calcFn]
@@ -87,7 +88,10 @@ grayscale value of a particular image coordinate and imaginary parts are 0"
           (recur (rest cs) (inc i) j))))))
 
 ;PHASE(F) = ATAN( IMAGINARY(F)/REAL(F) )
-(defn- calcPhase [c] (Math/atan (/ (c :imag) (c :real))))
+(defn- calcPhase [c]
+  (if (= 0.0 (c :real))
+    (Math/atan 1.0)
+    (Math/atan (/ (c :imag) (c :real)))))
 
 ;MAGNITUDE(F) = SQRT( REAL(F)^2+IMAGINARY(F)^2 )
 (defn- calcMag [c] (Math/sqrt (+ (* (c :real) (c :real)) (* (c :imag) (c :imag)))))

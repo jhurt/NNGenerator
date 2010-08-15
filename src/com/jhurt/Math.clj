@@ -13,6 +13,8 @@
   #^{:author "Jason Lee Hurt"}
   com.jhurt.Math)
 
+(defn logBase2 [x] (/ (Math/log x) (Math/log 2)))
+
 (def randomNumbers (repeatedly rand))
 
 (defn randomPositive [x]

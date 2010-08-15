@@ -13,8 +13,9 @@
 
 (ns
   #^{:author "Jason Lee Hurt"}
-  com.jhurt.image.FFT                                                                                       
-  (:use [com.jhurt.image.ImageUtils]))
+  com.jhurt.image.FFT
+  (:use [com.jhurt.image.ImageUtils])
+  (:use [com.jhurt.Math]))
 
 (defn combine
   "combine the results of each radix split"
@@ -25,7 +26,7 @@
          qs qs
          rs rs]
     (if (= N k) (concat y1 y2)
-      (let [kth (/ (* -1 k Math/PI) N)
+      (let [kth (/ (* -1.0 k Math/PI) N)
             wreal (Math/cos kth)
             wimag (Math/sin kth)
             q (first qs)
@@ -43,15 +44,25 @@
           (rest qs)
           (rest rs))))))
 
-(defn fft
-  "compute the FFT of a set of Complex values x"
+(defn- performFFT
+  "compute the FFT of a list of Complex values x"
   [x]
   (let [N (count x)]
     (if (= 1 N) [(first x)]
-      (do
-        (assert (= 0 (mod N 2)))
-        (let [even (take-nth 2 x)
-              odd (take-nth 2 (rest x))
-              qs (fft even)
-              rs (fft odd)]
-          (combine (count qs) qs rs))))))
+      (let [even (take-nth 2 x)
+            odd (take-nth 2 (rest x))
+            qs (performFFT even)
+            rs (performFFT odd)]
+        (combine (count qs) qs rs)))))
+
+(defn- getFFT [x]
+  (map
+    (fn [y] (struct Complex (/ (y :real) (count x)) (/ (y :imag) (count x))))
+    (performFFT x))) 
+
+(defn fft
+  "compute the FFT of a vector of vectors of image complex values"
+  [vals]
+  ;(println "vals\n" vals)
+  (let [height (Math/sqrt (count vals))]
+    (getFFT (flatten (transposeMatrix (partition height (performFFT (flatten vals))))))))
