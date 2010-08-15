@@ -94,4 +94,3 @@
     (Assert/assertEquals 0.9370758790869833 (:upper c))
     (Assert/assertEquals 0.9370758790869833 (:lower d))
     (Assert/assertEquals 1.0 (:upper d))))
-
