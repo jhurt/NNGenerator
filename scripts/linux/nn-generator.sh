@@ -8,4 +8,4 @@ then
     exit 1
 fi
 
-java -cp nn.jar:activemq-all-5.3.1.jar:piccolo.jar:clojure.jar com.jhurt.NNGenerator $@
+java -Xmx512m -cp nn.jar:activemq-all-5.3.1.jar:piccolo.jar:clojure.jar com.jhurt.NNGenerator $@
