@@ -16,6 +16,8 @@
     :methods [[testCrossover1HasLeastLayers [] void] [testCrossover1PreservesNumberOfLastLayerNodes [] void]
               [testCrossover2HasMostLayers [] void] [testCrossover2HasMostLayers2 [] void]
               [testCrossover2PreservesNumberOfLastLayerNodes [] void]
+              [testGetTotalError [] void]
+              [testGetRouletteWheel [] void]
               ])
   (:use [com.jhurt.ga.GA])
   (:use [com.jhurt.nn.ActivationFunctions]))
@@ -66,3 +68,30 @@
         b (crossover2 y x)]
     (Assert/assertEquals 1 ((last a) :number-of-nodes))
     (Assert/assertEquals 1 ((last b) :number-of-nodes))))
+
+(defn -testGetTotalError [_]
+  (let [parents (vector {:weights nil :error 5.0 :generation nil :layers nil :alpha 1.0 :gamma 2.0}
+    {:weights nil :error 6.0 :generation nil :layers nil :alpha 1.0 :gamma 2.0}
+    {:weights nil :error 17.0 :generation nil :layers nil :alpha 1.0 :gamma 2.0}
+    {:weights nil :error 35.0 :generation nil :layers nil :alpha 1.0 :gamma 2.0})]
+    (Assert/assertEquals 63.0 (getTotalError parents))))
+
+(defn -testGetRouletteWheel [_]
+  (let [parents (vector {:weights nil :error 5.0 :generation nil :layers nil :alpha 1.0 :gamma 2.0}
+    {:weights nil :error 6.0 :generation nil :layers nil :alpha 1.0 :gamma 2.0}
+    {:weights nil :error 17.0 :generation nil :layers nil :alpha 1.0 :gamma 2.0}
+    {:weights nil :error 35.0 :generation nil :layers nil :alpha 1.0 :gamma 2.0})
+        wheel (getRouletteWheel parents)
+        a (first wheel)
+        b (nth wheel 1)
+        c (nth wheel 2)
+        d (nth wheel 3)]
+    (Assert/assertEquals 0.0 (:lower a))
+    (Assert/assertEquals 0.4404688463911166 (:upper a))
+    (Assert/assertEquals 0.4404688463911166 (:lower b))
+    (Assert/assertEquals 0.8075262183837137 (:upper b))
+    (Assert/assertEquals 0.8075262183837137 (:lower c))
+    (Assert/assertEquals 0.9370758790869833 (:upper c))
+    (Assert/assertEquals 0.9370758790869833 (:lower d))
+    (Assert/assertEquals 1.0 (:upper d))))
+
