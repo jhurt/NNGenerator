@@ -133,6 +133,7 @@
     (assert (= 1 (count selection)))
     (:result (first selection))))
 
+;; TODO implement reproduction
 (defn breed [trainResults newPopulationSize]
   ; TODO leave the lower half for breeding???
   (let [parents (getBestResults (int (* 0.5 newPopulationSize)) trainResults)
