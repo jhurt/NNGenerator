@@ -120,15 +120,16 @@
    each iteration.
    alpha is the momentum factor for help in preventing oscillation during learning
    gamma is a learning constant that defines step length of correction"
-  [cycles layers ioMap weights inputToErrorMap alpha gamma]
+  [cycles layers getTrainingDatum weights alpha gamma]
   (loop [n cycles
          weights weights
          previousDeltas nil
-         inputToErrorMap inputToErrorMap]
+         inputToErrorMap {}]
     (if (> n 0)
-      (let [;grab a random input and corresponding output
-            input (nth (keys ioMap) (randomBounded -1 (dec (count ioMap))))
-            output (ioMap input)
+      (let [datum (getTrainingDatum)
+            ;extract the input and corresponding output
+            input (datum :input)
+            output (datum :output)
             ;feed-forward step
             nodeValues (calculateNodeValues layers input weights)
             ;backpropagation step
@@ -146,7 +147,3 @@
           deltasWithMomentum
           (assoc inputToErrorMap input rmsError)))
       {:rms-error (getTotalRmsError inputToErrorMap) :weights weights})))
-
-(defn train [cycles layers ioMap weights alpha gamma]
-  (let [inputToErrorMap (zipmap (keys ioMap) (take (count ioMap) (cycle [1.0])))]
-    (trainNetwork cycles layers ioMap weights inputToErrorMap alpha gamma)))
