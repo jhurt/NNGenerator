@@ -74,8 +74,8 @@
          p (state :playerHand)
          d (state :dealerHand)]
     (cond
-      (< (getHandValue p) 17) (recur s (conj p (s :card)) d)
-      (< (getHandValue d) 17) (recur s p (conj d (s :card)))
+      (< (getHandValue p) 17) (recur (popCard (s :deck)) (conj p (s :card)) d)
+      (< (getHandValue d) 17) (recur (popCard (s :deck)) p (conj d (s :card)))
       :else
       (let [x (getHandValue p) y (getHandValue d)]
         (cond
@@ -89,7 +89,7 @@
   (loop [s (popCard (state :deck))
          d (state :dealerHand)]
     (cond
-      (< (getHandValue d) 17) (recur s (conj d (s :card)))
+      (< (getHandValue d) 17) (recur (popCard (s :deck)) (conj d (s :card)))
       :else
       (let [p (state :playerHand) x (getHandValue p) y (getHandValue d)]
         (cond
@@ -110,7 +110,7 @@
   (if (empty? @currentSet) (dosync (ref-set currentSet (makeSet))))
   (assert (not (empty? @currentSet)))
   (let [state (first @currentSet)
-        input (vector (getHandValue (state :playerHand)) ((first (state :dealerHand)) :value))
+        input (vector (getHandValue (state :playerHand)) ((first (rest (state :dealerHand))) :value))
         output [(getOutcome state)]]
     (dosync (ref-set currentSet (rest @currentSet)))
     {:input input :output output}))

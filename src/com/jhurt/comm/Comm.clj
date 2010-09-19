@@ -67,7 +67,6 @@
 (defn publishMessage
   "publish a string message"
   [publisher name content]
-  (println "\npublishing: " content)
   (let [producer (publisher :producer)
         session (publisher :session)
         m (doto (.createTextMessage session content) (.setStringProperty "name" name))]
