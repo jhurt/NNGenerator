@@ -70,7 +70,11 @@
 
 (def generateXorMenuItem (new JMenuItem "Generate XOR NN"))
 
+(def generateSbMenuItem (new JMenuItem "Generate Blackjack Player NN"))
+
 (def generateOcrMenuItem (new JMenuItem "Generate OCR NN"))
+
+(def trainMenuItems [generateXorMenuItem generateSbMenuItem generateOcrMenuItem])
 
 (def tableModel (proxy [AbstractTableModel] []
   (getColumnName [index]
@@ -95,13 +99,13 @@
 
 (defn breed
   "breed the generation, this method assumes all results for the generation have been received"
-  [generation results networkType]
+  [generation results nnType]
   (doall (map
     (fn [child]
       (let [msg {:layers (child :layers)
                  :training-cycles (getMaxTrainingCycles) :generation (inc generation)
                  :alpha (child :alpha) :gamma (child :gamma)}]
-        (Comm/publishMessage @slavesPublisher networkType (serialize msg))))
+        (Comm/publishMessage @slavesPublisher nnType (serialize msg))))
     (GA/breed results (getNumberOfSlaves)))))
 
 (defn removeTrainingGeneration [generation]
@@ -147,7 +151,7 @@
 
 (defn checkBreedGeneration
   "check to see if the generation is ready to breed"
-  [generation results networkType]
+  [generation results nnType]
   (println "received " (count results) " results for generation: " generation)
   (if (= (getNumberOfSlaves) (count results))
     (if (= generation (getNumberOfGenerations))
@@ -155,8 +159,7 @@
       (SwingUtils/doOnEdt
         #(do
           (.setValue progressBar generation)
-          (.setEnabled generateXorMenuItem true)
-          (.setEnabled generateOcrMenuItem true)
+          (doall (map (fn [x] (.setEnabled x true)) trainMenuItems))
           (let [child (GA/getHealthiestChild results)
                 layers (child :layers)
                 weights (child :weights)
@@ -168,7 +171,7 @@
             (launchGraphWindow canvas saveNetworkButton (child :error)))))
       ;breed the results
       (do
-        (breed generation results networkType)
+        (breed generation results nnType)
         (removeTrainingGeneration generation)
         (SwingUtils/doOnEdt
           #(do
@@ -176,14 +179,14 @@
 
 (defn addTrainingResult
   "add a new training result to the list, each generation will have its own list of results"
-  [generation result networkType]
+  [generation result nnType]
   (dosync
     (let [results (@generationToResults generation)]
       (if (seq results)
         (ref-set generationToResults
           (conj @generationToResults {generation (conj results result)}))
         (ref-set generationToResults (conj @generationToResults {generation (list result)})))))
-  (checkBreedGeneration generation (@generationToResults generation) networkType))
+  (checkBreedGeneration generation (@generationToResults generation) nnType))
 
 (defn updateConnectedPeers []
   ;fire a table data change event
@@ -208,6 +211,13 @@
       (let [generation (trainResult :generation)]
         (if-not (nil? generation)
           (addTrainingResult generation trainResult Comm/TRAIN_XOR))))))
+
+(defmethod handleIncomingMessage Comm/FINISH_TRAIN_SB [msg]
+  (let [trainResult (deserialize (.getText msg))]
+    (if-not (nil? trainResult)
+      (let [generation (trainResult :generation)]
+        (if-not (nil? generation)
+          (addTrainingResult generation trainResult Comm/TRAIN_SB))))))
 
 (defmethod handleIncomingMessage Comm/FINISH_TRAIN_OCR [msg]
   (let [trainResult (deserialize (.getText msg))]
@@ -275,39 +285,24 @@
 
 (defn disableTrain []
   (do
-    (.setEnabled generateXorMenuItem false)
-    (.setEnabled generateOcrMenuItem false)
+    (doall (map (fn [x] (.setEnabled x false)) trainMenuItems))
     (.setMaximum progressBar (getNumberOfGenerations))
     (.setValue progressBar 0)
     (.setVisible progressBar true)))
 
-(def menuItemGenerateOcr (doto generateOcrMenuItem
+(defn getTrainMenuItem [item nnType]
+  (doto item
   (.addActionListener (proxy [ActionListener] []
     (actionPerformed [e]
       (ThreadUtils/onThread
         (fn []
-          (sendTrainingMessages Comm/TRAIN_OCR)
+          (sendTrainingMessages nnType)
           (dosync (ref-set generationToResults {}))
           (SwingUtils/doOnEdt #((disableTrain))))))))))
-
-(def menuItemGenerateXOR (doto generateXorMenuItem
-  (.addActionListener (proxy [ActionListener] []
-    (actionPerformed [e]
-      (ThreadUtils/onThread
-        (fn []
-          (sendTrainingMessages Comm/TRAIN_XOR)
-          (dosync (ref-set generationToResults {}))
-          (SwingUtils/doOnEdt #((disableTrain))))))))))
-
-(def menuItemGenerateFacialRecognition (doto (new JMenuItem "Generate Facial Recognition NN")
-  (.addActionListener (proxy [ActionListener] []
-    (actionPerformed [e] ;TODO
-      )))))
 
 (def fileMenu (doto (new JMenu "File")
-  (.add menuItemGenerateXOR)
-  (.add menuItemGenerateOcr)
-  (.add menuItemGenerateFacialRecognition)
+  (.add (getTrainMenuItem generateXorMenuItem Comm/TRAIN_XOR))
+  (.add (getTrainMenuItem generateSbMenuItem Comm/TRAIN_SB))
   (.addSeparator)
   (.add exitMenuItem)))
 

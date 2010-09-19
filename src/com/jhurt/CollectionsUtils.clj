@@ -13,6 +13,11 @@
   #^{:author "Jason Lee Hurt"}
   com.jhurt.CollectionsUtils)
 
+(defn removeFrom
+  "return a vector with the ith element removed from vector x"
+  [v i]
+   (vec (concat (subvec v 0 i) (subvec v (inc i)))))
+
 (defn bimap
   "Return a bimap with unique keys and unique values given an input map x"
   [x]

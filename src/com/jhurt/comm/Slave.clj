@@ -14,6 +14,7 @@
   com.jhurt.comm.Slave
   (:gen-class)
   (:require [com.jhurt.nn.trainer.XOR :as XOR])
+  (:require [com.jhurt.nn.trainer.SimpleBlackjack :as SB])
   (:require [com.jhurt.ThreadUtils :as ThreadUtils])
   (:require [com.jhurt.comm.Comm :as Comm])
   (:use [com.jhurt.Serialization]))
@@ -35,7 +36,7 @@
         (Comm/heartbeat @myName @masterPublisher)
         (Thread/sleep 60000)))))
 
-(defn trainNetworkCallback
+(defn xorTrainCallback
   "called after a network has been trained by a trainer"
   [weights error generation layers alpha gamma]
   (let [; this is a small hack because serializing NaN and deserializing it will result
@@ -43,8 +44,19 @@
         ; this should ideally be fixed in Clojure at some point
         e (if (> error 0.0) error 1.0)
         msg {:weights weights :error e :generation generation :layers layers :alpha alpha :gamma gamma}]
-    (println "\n***Slave " @myName " TRAINED NETWORK for generation: " generation ",error=" e ",alpha=" alpha ",gamma=" gamma)
+    (println "\n***Slave " @myName " TRAINED XOR NETWORK for generation: " generation ",error=" e ",alpha=" alpha ",gamma=" gamma)
     (Comm/publishMessage @masterPublisher Comm/FINISH_TRAIN_XOR (serialize msg))))
+
+(defn sbTrainCallback
+  "called after a network has been trained by a trainer"
+  [weights error generation layers alpha gamma]
+  (let [; this is a small hack because serializing NaN and deserializing it will result
+        ; in a symbol instead of Double/NaN, so we send 1.0 in the case of NaN
+        ; this should ideally be fixed in Clojure at some point
+        e (if (> error 0.0) error 1.0)
+        msg {:weights weights :error e :generation generation :layers layers :alpha alpha :gamma gamma}]
+    (println "\n***Slave " @myName " TRAINED SimpleBlackjack NETWORK for generation: " generation ",error=" e ",alpha=" alpha ",gamma=" gamma)
+    (Comm/publishMessage @masterPublisher Comm/FINISH_TRAIN_SB (serialize msg))))
 
 ;a multimethod for handling incoming messages
 ;the dispatch function is the name of the message
@@ -55,7 +67,13 @@
   ;(println "\n\nslave received train xor msg: " (.getText msg))
   (let [trainMsg (deserialize (.getText msg))]
     (XOR/train
-      (trainMsg :layers) (trainMsg :training-cycles) (trainMsg :generation) (trainMsg :alpha) (trainMsg :gamma) trainNetworkCallback)))
+      (trainMsg :layers) (trainMsg :training-cycles) (trainMsg :generation) (trainMsg :alpha) (trainMsg :gamma) xorTrainCallback)))
+
+(defmethod handleIncomingMessage Comm/TRAIN_SB
+  [msg]
+  (let [trainMsg (deserialize (.getText msg))]
+    (SB/train
+      (trainMsg :layers) (trainMsg :training-cycles) (trainMsg :generation) (trainMsg :alpha) (trainMsg :gamma) sbTrainCallback)))
 
 (def dfltMessageListener (proxy [MessageListener] []
   (onMessage [message]

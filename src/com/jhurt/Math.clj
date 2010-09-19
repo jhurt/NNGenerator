@@ -21,11 +21,10 @@
   (int (Math/ceil (* x (rand 1)))))
 
 (defn randomBounded
-  "return a random integer greater than x
-    and less than or equal to y"
+  "return a random integer greater than or equal to x and less than y"
   [x y]
   (let [z (+ (rand (- y x)) x)]
-      (int (Math/ceil z))))
+      (int (Math/floor z))))
 
 ;; Matrix Functions
 

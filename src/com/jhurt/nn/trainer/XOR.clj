@@ -24,7 +24,7 @@
                 [1 1] [-1]})
 
 (defn getTrainingDatum []
-  (let [key (nth (keys XOR-table) (randomBounded -1 (dec (count XOR-table))))
+  (let [key (nth (keys XOR-table) (randomBounded 0 (count XOR-table)))
         value (XOR-table key)]
     {:input key :output value}))
 

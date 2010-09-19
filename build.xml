@@ -79,6 +79,7 @@
 			<arg value="com.jhurt.nn.PerceptronRojas" />
 
             <arg value="com.jhurt.nn.trainer.FacialRecognition" />
+            <arg value="com.jhurt.nn.trainer.SimpleBlackjack" />
             <arg value="com.jhurt.nn.trainer.XOR" />
 
             <arg value="com.jhurt.CollectionsUtils" />

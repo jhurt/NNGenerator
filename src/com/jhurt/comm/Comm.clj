@@ -22,9 +22,14 @@
 
 (def TRAIN_XOR "trainXOR")
 (def FINISH_TRAIN_XOR "finishTrainXOR")
+
+(def TRAIN_SB "trainSB")
+(def FINISH_TRAIN_SB "finishTrainSB")
+
 (def TRAIN_OCR "trainOCR")
 (def FINISH_TRAIN_OCR "finishTrainOCR")
-(def HEARTBEAT "hb")
+
+(def HEARTBEAT "HB")
 
 (defstruct Publisher :producer :session)
 (defstruct Subscriber :consumer :replyProducer :session)
@@ -36,7 +41,6 @@
 (defn getNewConnection [ip port]
   (let [url (str "failover://tcp://" ip ":" port)
     connectionFactory (new ActiveMQConnectionFactory ActiveMQConnection/DEFAULT_USER ActiveMQConnection/DEFAULT_PASSWORD url)]
-    ;ActiveMQConnection/DEFAULT_BROKER_URL)
     (.createConnection connectionFactory)))
 
 (defn getPublisher [connection queueName]
@@ -57,12 +61,13 @@
 (defn heartbeat [clientId publisher]
   (let [producer (publisher :producer)
         session (publisher :session)
-        m (doto (.createTextMessage session "hb") (.setStringProperty "name" HEARTBEAT) (.setStringProperty "clientId" clientId))]
+        m (doto (.createTextMessage session "HeartBeat") (.setStringProperty "name" HEARTBEAT) (.setStringProperty "clientId" clientId))]
     (.send producer m)))
 
 (defn publishMessage
   "publish a string message"
   [publisher name content]
+  (println "\npublishing: " content)
   (let [producer (publisher :producer)
         session (publisher :session)
         m (doto (.createTextMessage session content) (.setStringProperty "name" name))]
