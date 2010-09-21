@@ -24,7 +24,7 @@
   "return a random integer greater than or equal to x and less than y"
   [x y]
   (let [z (+ (rand (- y x)) x)]
-      (int (Math/floor z))))
+    (int (Math/floor z))))
 
 ;; Matrix Functions
 
@@ -108,38 +108,14 @@
   [vectorA vectorB]
   (map (fn [x] (map (fn [y] (* x y)) vectorB)) vectorA))
 
-;; Functions shared b/w Matrix and Vector
-(defmulti getArityMulti (fn [a x] (class x)))
+(defn- mScalar [x scalar result]
+  (cond
+    (empty? x) result
+    (or (seq? (first x)) (vector? (first x)))
+      (mScalar (rest x) scalar (conj result (mScalar (first x) scalar [])))
+    :else (mScalar (rest x) scalar (conj result (* scalar (first x))))))
 
-(defmethod getArityMulti clojure.lang.ISeq [a x]
-  (getArityMulti (inc a) (first x)))
+(defn multiplyScalar [x scalar] (mScalar x scalar []))
 
-(defmethod getArityMulti clojure.lang.IPersistentVector [a x]
-  (getArityMulti (inc a) (first x)))
-
-(defmethod getArityMulti :default [a x] a)
-
-(defn getArity [x dummy] (getArityMulti 0 x))
-
-(defmulti multiplyScalar getArity)
-
-(defmethod multiplyScalar 3 [x scalar]
-  (loop [x x
-         r []]
-    (if-not (seq x) r (recur (rest x) (conj r (multiplyScalar (first x) scalar))))))
-
-(defmethod multiplyScalar 2 [matrixA scalar]
-  (if (seq matrixA)
-    (conj
-      (multiplyScalar (rest matrixA) scalar)
-      (map (fn [arg] (* arg scalar)) (first matrixA)))))
-
-(defmethod multiplyScalar 1 [array scalar]
-  (map * (repeat (count array) scalar) array))
-
-(defmethod multiplyScalar :default [x scalar]
-  (* x scalar))
-
-;TODO put this somewhere else
 (defn weightsByInput [w i]
   (map (fn [x y] (reduce + (map * (repeat (count x) y) x))) (transposeMatrix w) i))

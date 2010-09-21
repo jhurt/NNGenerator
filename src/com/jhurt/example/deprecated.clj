@@ -69,3 +69,36 @@
 
 (solveLockers 1000)
 
+
+; Functions shared b/w Matrix and Vector
+(defmulti getArityMulti (fn [a x] (class x)))
+
+(defmethod getArityMulti clojure.lang.ISeq [a x]
+  (getArityMulti (inc a) (first x)))
+
+(defmethod getArityMulti clojure.lang.IPersistentVector [a x]
+  (getArityMulti (inc a) (first x)))
+
+(defmethod getArityMulti :default [a x] a)
+
+(defn getArity [x dummy] (getArityMulti 0 x))
+
+(defmulti multiplyScalar getArity)
+
+(defmethod multiplyScalar 3 [x scalar]
+  (loop [x x
+         r []]
+    (if-not (seq x) r (recur (rest x) (conj r (multiplyScalar (first x) scalar))))))
+
+(defmethod multiplyScalar 2 [matrixA scalar]
+  (if (seq matrixA)
+    (conj
+      (multiplyScalar (rest matrixA) scalar)
+      (map (fn [arg] (* arg scalar)) (first matrixA)))))
+
+(defmethod multiplyScalar 1 [array scalar]
+  (map * (repeat (count array) scalar) array))
+
+(defmethod multiplyScalar :default [x scalar]
+  (* x scalar))
+
