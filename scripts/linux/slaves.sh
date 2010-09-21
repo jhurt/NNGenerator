@@ -9,5 +9,5 @@ then
 fi
 
 for (( i=1;i<=$1;i+=1 )) ;
-do java -cp nn.jar:activemq-all-5.3.1.jar:piccolo.jar:clojure.jar com.jhurt.comm.Slave slave$i $2 $3 &
+do java -XX:+AggressiveOpts -XX:+UseFastAccessorMethods -XX:+UseTLAB -XX:+UnlockExperimentalVMOptions -XX:+UseG1GC -cp nn.jar:activemq-all-5.3.1.jar:piccolo.jar:clojure.jar com.jhurt.comm.Slave slave$i $2 $3 &
 done;
