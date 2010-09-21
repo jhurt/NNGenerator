@@ -33,11 +33,14 @@
   '(java.io File FileWriter)
   '(javax.jms MessageListener))
 
+(defstruct BreedResults :lowest-rms :average-rms)
+
 ;mutable state
 (def masterSubscriber (ref nil))
 (def slavesPublisher (ref nil))
 (def clientIdToLastMsgMap (ref (sorted-map)))
 (def generationToResults (ref {}))
+(def generationToPopulation (ref {}))
 (def jmsBrokerIp (ref "127.0.0.1"))
 (def jmsBrokerPort (ref "61616"))
 
@@ -98,20 +101,20 @@
   (getDescription [] "Neural Network Files")))
 
 (defn breed
-  "breed the generation, this method assumes all results for the generation have been received"
-  [generation results nnType]
+  "breed the generation, this method assumes the entire population for the generation have been received"
+  [generation population nnType]
   (doall (map
     (fn [child]
       (let [msg {:layers (child :layers)
                  :training-cycles (getMaxTrainingCycles) :generation (inc generation)
                  :alpha (child :alpha) :gamma (child :gamma)}]
         (Comm/publishMessage @slavesPublisher nnType (serialize msg))))
-    (GA/breed results (getNumberOfSlaves)))))
+    (GA/breed population (getNumberOfSlaves)))))
 
-(defn removeTrainingGeneration [generation]
-  (let [results (@generationToResults generation)]
-    (if-not (nil? results)
-      (dosync (ref-set generationToResults (dissoc @generationToResults generation))))))
+(defn removePopulation [generation]
+  (let [p (@generationToPopulation generation)]
+    (if-not (nil? p)
+      (dosync (ref-set generationToPopulation (dissoc @generationToPopulation generation))))))
 
 (defn getSaveNetworkButton
   "return a new save network button, nn is the network to save, c is the
@@ -149,44 +152,53 @@
       (.setSize 800 600)
       (.setVisible true))))
 
+(defn saveGenerationResults [generation population]
+  (let [pop (filter (fn [x] (< (x :error) 1.0)) population)
+        lowest ((reduce (fn [x y] (if (< (x :error) (y :error)) x y)) pop) :error)
+        average (/ (reduce + (map (fn [x] (x :error)) pop)) (count pop))
+        results (struct BreedResults lowest average)]
+    (dosync (ref-set generationToResults (conj @generationToResults {generation results})))))
+
 (defn checkBreedGeneration
   "check to see if the generation is ready to breed"
-  [generation results nnType]
-  (println "received " (count results) " results for generation: " generation)
-  (if (= (getNumberOfSlaves) (count results))
-    (if (= generation (getNumberOfGenerations))
-      ;GA is complete
-      (SwingUtils/doOnEdt
-        #(do
-          (.setValue progressBar generation)
-          (doall (map (fn [x] (.setEnabled x true)) trainMenuItems))
-          (let [child (GA/getHealthiestChild results)
-                layers (child :layers)
-                weights (child :weights)
-                inputArity 2
-                outputArity 1
-                canvas (Graph/getNewCanvas weights layers inputArity outputArity)
-                saveNetworkButton (getSaveNetworkButton child canvas)]
-            (println "resultant nn: " child)
-            (launchGraphWindow canvas saveNetworkButton (child :error)))))
-      ;breed the results
-      (do
-        (breed generation results nnType)
-        (removeTrainingGeneration generation)
+  [generation population nnType]
+  (println "currently have " (count population) " population for generation: " generation)
+  (if (= (getNumberOfSlaves) (count population))
+    (do
+      (saveGenerationResults generation population)
+      (removePopulation generation)
+      (if (= generation (getNumberOfGenerations))
+        ;GA is complete
         (SwingUtils/doOnEdt
           #(do
-            (.setValue progressBar generation)))))))
+            (.setValue progressBar generation)
+            (doall (map (fn [x] (.setEnabled x true)) trainMenuItems))
+            (let [child (GA/getHealthiestChild population)
+                  layers (child :layers)
+                  weights (child :weights)
+                  inputArity 2
+                  outputArity 1
+                  canvas (Graph/getNewCanvas weights layers inputArity outputArity)
+                  saveNetworkButton (getSaveNetworkButton child canvas)]
+              (println "resultant nn: " child)
+              (println "results: " @generationToResults) 
+              (launchGraphWindow canvas saveNetworkButton (child :error)))))
+        ;breed the population
+        (do
+          (breed generation population nnType)
+          (SwingUtils/doOnEdt
+            #(do
+              (.setValue progressBar generation))))))))
 
-(defn addTrainingResult
-  "add a new training result to the list, each generation will have its own list of results"
-  [generation result nnType]
+(defn addToPopulation
+  "add a new child to it's population, each generation will have its own population"
+  [generation p nnType]
   (dosync
-    (let [results (@generationToResults generation)]
-      (if (seq results)
-        (ref-set generationToResults
-          (conj @generationToResults {generation (conj results result)}))
-        (ref-set generationToResults (conj @generationToResults {generation (list result)})))))
-  (checkBreedGeneration generation (@generationToResults generation) nnType))
+    (let [population (@generationToPopulation generation)]
+      (if (seq population)
+        (ref-set generationToPopulation (conj @generationToPopulation {generation (conj population p)}))
+        (ref-set generationToPopulation (conj @generationToPopulation {generation (list p)})))))
+  (checkBreedGeneration generation (@generationToPopulation generation) nnType))
 
 (defn updateConnectedPeers []
   ;fire a table data change event
@@ -206,25 +218,25 @@
   (updateConnectedPeers))
 
 (defmethod handleIncomingMessage Comm/FINISH_TRAIN_XOR [msg]
-  (let [trainResult (deserialize (.getText msg))]
-    (if-not (nil? trainResult)
-      (let [generation (trainResult :generation)]
+  (let [specimen (deserialize (.getText msg))]
+    (if-not (nil? specimen)
+      (let [generation (specimen :generation)]
         (if-not (nil? generation)
-          (addTrainingResult generation trainResult Comm/TRAIN_XOR))))))
+          (addToPopulation generation specimen Comm/TRAIN_XOR))))))
 
 (defmethod handleIncomingMessage Comm/FINISH_TRAIN_SB [msg]
-  (let [trainResult (deserialize (.getText msg))]
-    (if-not (nil? trainResult)
-      (let [generation (trainResult :generation)]
+  (let [specimen (deserialize (.getText msg))]
+    (if-not (nil? specimen)
+      (let [generation (specimen :generation)]
         (if-not (nil? generation)
-          (addTrainingResult generation trainResult Comm/TRAIN_SB))))))
+          (addToPopulation generation specimen Comm/TRAIN_SB))))))
 
 (defmethod handleIncomingMessage Comm/FINISH_TRAIN_OCR [msg]
-  (let [trainResult (deserialize (.getText msg))]
-    (if-not (nil? trainResult)
-      (let [generation (trainResult :generation)]
+  (let [specimen (deserialize (.getText msg))]
+    (if-not (nil? specimen)
+      (let [generation (specimen :generation)]
         (if-not (nil? generation)
-          (addTrainingResult generation trainResult Comm/TRAIN_OCR))))))
+          (addToPopulation generation specimen Comm/TRAIN_OCR))))))
 
 (def dfltMessageListener (proxy [MessageListener] []
   (onMessage [message]
@@ -292,13 +304,13 @@
 
 (defn getTrainMenuItem [item nnType]
   (doto item
-  (.addActionListener (proxy [ActionListener] []
-    (actionPerformed [e]
-      (ThreadUtils/onThread
-        (fn []
-          (sendTrainingMessages nnType)
-          (dosync (ref-set generationToResults {}))
-          (SwingUtils/doOnEdt #((disableTrain))))))))))
+    (.addActionListener (proxy [ActionListener] []
+      (actionPerformed [e]
+        (ThreadUtils/onThread
+          (fn []
+            (sendTrainingMessages nnType)
+            (dosync (ref-set generationToResults {}) (ref-set generationToPopulation {}))
+            (SwingUtils/doOnEdt #((disableTrain))))))))))
 
 (def fileMenu (doto (new JMenu "File")
   (.add (getTrainMenuItem generateXorMenuItem Comm/TRAIN_XOR))
