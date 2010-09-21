@@ -97,6 +97,14 @@
   [v m]
   (map (fn [row] (apply + (map * row v))) (transposeMatrix m)))
 
+(defn vectorByMatrixSlow
+  "multiply vector v by matrix m"
+  [v m r]
+  (cond
+    (or (empty? m) (empty? (first m))) r
+    :else (vectorByMatrix v (map (fn [x] (rest x)) m)
+      (conj r (reduce + (map (fn [z y] (* z y)) v (map (fn [x] (first x)) m)))))))
+
 (defn matrixByVector
   "multiply matrix m by vector v"
   [m v]
