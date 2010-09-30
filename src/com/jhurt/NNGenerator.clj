@@ -308,8 +308,8 @@
       (actionPerformed [e]
         (ThreadUtils/onThread
           (fn []
-            (sendTrainingMessages nnType)
             (dosync (ref-set generationToResults {}) (ref-set generationToPopulation {}))
+            (sendTrainingMessages nnType)
             (SwingUtils/doOnEdt #((disableTrain))))))))))
 
 (def fileMenu (doto (new JMenu "File")
