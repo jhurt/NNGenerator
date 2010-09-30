@@ -40,10 +40,23 @@
     {:activation-fn (layer2 :activation-fn)
      :derivative-fn (layer2 :derivative-fn)}))
 
-(defn crossoverConstant [c1 c2]
+(defn chooseConstant [c1 c2]
   (let [x (rand 1)]
-    (if (< x 0.333333) c1
-      (if (< x 0.6666667) c2 (/ (+ c1 c2) 2.0)))))
+    (cond
+      (< x 0.3333333) c1
+      (< x 0.6666667) c2
+      :else (* 0.5 (+ c1 c2)))))
+
+(defn crossoverBounded [c1 c2 lower upper]
+  (let [sign (if (> c1 c2) 1.0 -1.0)
+        c (+ (* sign (rand 0.2)) (chooseConstant c1 c2))]
+    (cond
+      (> c upper) upper
+      (< c lower) lower
+      :else c)))
+
+(defn crossoverAlpha [c1 c2] (crossoverBounded c1 c2 0.1 1.0))
+(defn crossoverGamma [c1 c2] (crossoverBounded c1 c2 -1.0 -0.1))
 
 (defn crossover1
   "perform a crossover on 2 NN structures, in this version the # of layers will be
@@ -53,7 +66,7 @@
         (vec (map
           (fn [ithLayerNN1 ithLayerNN2]
             (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
-              {:number-of-nodes (int (crossoverConstant (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes)))
+              {:number-of-nodes (int (chooseConstant (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes)))
                :activation-fn (activationFns :activation-fn)
                :derivative-fn (activationFns :derivative-fn)}))
           (butlast layersNN1) (butlast layersNN2)))
@@ -74,7 +87,7 @@
         (vec (map
           (fn [ithLayerNN1 ithLayerNN2]
             (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
-              {:number-of-nodes (int (crossoverConstant (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes)))
+              {:number-of-nodes (int (chooseConstant (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes)))
                :activation-fn (activationFns :activation-fn)
                :derivative-fn (activationFns :derivative-fn)}))
           layersNN1 layersNN2))
@@ -94,11 +107,13 @@
   "get a new child based on 2 parents"
   [p1 p2]
   (let [layers (crossoverLayers (:layers p1) (:layers p2))
-        alpha (crossoverConstant (:alpha p1) (:alpha p2))
-        gamma (crossoverConstant (:gamma p1) (:gamma p2))]
+        alpha (crossoverAlpha (:alpha p1) (:alpha p2))
+        gamma (crossoverGamma (:gamma p1) (:gamma p2))]
     {:layers layers :alpha alpha :gamma gamma}))
 
-(defn getTotalError [trainResults]
+(defn getTotalError
+  "get the total error of a set of training results"
+  [trainResults]
   (loop [results trainResults
          total 0.0]
     (if (empty? results) total
@@ -113,7 +128,11 @@
               x (/ 1.0 (/ error totalError))]
           (recur (rest results) (conj proportions x)))))))
 
-(defn getRouletteWheel [trainResults]
+(defn getRouletteWheel
+  "build a roulette wheel based on training results. The probability
+  of selecting a training result is proportional to the fitness of the result
+  as compared to all other results"
+  [trainResults]
   (let [proportions (getInverseErrorProportions trainResults)
         total (reduce + proportions)]
     (loop [results trainResults
@@ -127,19 +146,21 @@
               entry {:lower current :upper upper :result (first results)}]
           (recur (rest results) (rest proportions) upper (conj wheel entry)))))))
 
-(defn selectRandomParent [rouletteWheel]
+(defn selectParent
+  "use a weighted roulette wheel to select parents for the next generation.
+  The fittest training results have the highest probability of selection"
+  [rouletteWheel]
   (let [r (rand 1)
         selection (filter (fn [x] (and (>= r (:lower x)) (<= r (:upper x)))) rouletteWheel)]
     (assert (= 1 (count selection)))
     (:result (first selection))))
 
-;; TODO implement reproduction
 (defn breed [trainResults newPopulationSize]
-  ; TODO leave the lower half for breeding???
   (let [parents (getBestResults (int (* 0.5 newPopulationSize)) trainResults)
         rouletteWheel (getRouletteWheel parents)]
-    (loop [children []]
-      (if (= newPopulationSize (count children)) children
-        (recur (conj children (getChild (selectRandomParent rouletteWheel) (selectRandomParent rouletteWheel))))))))
-
-
+    (loop [children [] r (rand 1)]
+      (cond (= newPopulationSize (count children)) children
+        ;reproduction
+        (< r 0.25) (recur (conj children (selectParent rouletteWheel)) (rand 1))
+        ;crossover
+        :else (recur (conj children (getChild (selectParent rouletteWheel) (selectParent rouletteWheel))) (rand 1))))))
