@@ -120,3 +120,27 @@
   (let [weights (getRandomWeightMatrices layers 2 1)
         result (BP/trainNetwork numCycles layers getTrainingDatum weights alpha gamma)]
     (callback (result :weights) (result :rms-error) generation layers alpha gamma)))
+
+(defn playDealerRules
+  "return a 0 for a tie, -1 for a loss, 1 for a win"
+  []
+  (let [deck (vec (newDeck))
+        s1 (popCard deck)
+        s2 (popCard (s1 :deck))
+        s3 (popCard (s2 :deck))
+        s4 (popCard (s3 :deck))
+        p1 (conj [] (s1 :card))
+        d1 (conj [] (s2 :card))
+        p2 (conj p1 (s3 :card))
+        d2 (conj d1 (s4 :card))]
+    (loop [state s4 playerHand p2 dealerHand d2]
+      (let [deck (state :deck) pVal (getHandValue playerHand) dVal (getHandValue dealerHand) s (popCard deck)]
+        (cond
+          (< pVal 17) (recur s (conj playerHand (s :card)) dealerHand)
+          (< dVal 17) (recur s playerHand (conj dealerHand (s :card)))
+          (and (> pVal 21) (> dVal 21)) 0
+          (> pVal 21) -1
+          (> dVal 21) 1
+          (= pVal dVal) 0
+          (> pVal dVal) 1
+          :else -1)))))
