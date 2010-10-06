@@ -42,7 +42,10 @@
                            (repeat 4 (struct Card :three 3))
                            (repeat 4 (struct Card :two 2))]))
 
-(defn popCard [deck]
+(defn popCard
+  "pop a random card from the deck.
+   return the resultant deck and the popped card"
+  [deck]
   (let [i (randomBounded 0 (count deck))]
     {:deck (CU/removeFrom deck i) :card (nth deck i)}))
 
@@ -106,7 +109,9 @@
       (and (not= h s) (> s h)) -1
       :else 0)))
 
-(defn getTrainingDatum []
+(defn getTrainingDatum
+  "called by the back-propagation algorithm to get a training input/output pair"
+  []
   (if (empty? @currentSet) (dosync (ref-set currentSet (makeSet))))
   (assert (not (empty? @currentSet)))
   (let [state (first @currentSet)
@@ -116,13 +121,15 @@
     {:input input :output output}))
 
 (defn train
+  "train a blackjack player NN"
   [layers numCycles generation alpha gamma callback]
   (let [weights (getRandomWeightMatrices layers 2 1)
         result (BP/trainNetwork numCycles layers getTrainingDatum weights alpha gamma)]
     (callback (result :weights) (result :rms-error) generation layers alpha gamma)))
 
 (defn playDealerRules
-  "return a 0 for a tie, -1 for a loss, 1 for a win"
+  "play by dealer rules, staying at 17 or greater.
+   return a 0 for a tie, -1 for a loss, 1 for a win"
   []
   (let [deck (vec (newDeck))
         s1 (popCard deck)
@@ -137,6 +144,37 @@
       (let [deck (state :deck) pVal (getHandValue playerHand) dVal (getHandValue dealerHand) s (popCard deck)]
         (cond
           (< pVal 17) (recur s (conj playerHand (s :card)) dealerHand)
+          (< dVal 17) (recur s playerHand (conj dealerHand (s :card)))
+          (and (> pVal 21) (> dVal 21)) 0
+          (> pVal 21) -1
+          (> dVal 21) 1
+          (= pVal dVal) 0
+          (> pVal dVal) 1
+          :else -1)))))
+
+(defn- shouldHit?
+  "return true if the NN determines the player should hit, else false"
+  [playerHand dealerHand layers weights]
+  (let [input (vector (getHandValue playerHand) ((first (rest dealerHand)) :value))
+        output (BP/calculateOutput layers input weights)]
+    (if (> output 0) true false)))
+
+(defn playWithTrainedPlayer
+  "play with a trained player NN. return a 0 for a tie, -1 for a loss, 1 for a win"
+  [layers weights]
+  (let [deck (vec (newDeck))
+        s1 (popCard deck)
+        s2 (popCard (s1 :deck))
+        s3 (popCard (s2 :deck))
+        s4 (popCard (s3 :deck))
+        p1 (conj [] (s1 :card))
+        d1 (conj [] (s2 :card))
+        p2 (conj p1 (s3 :card))
+        d2 (conj d1 (s4 :card))]
+    (loop [state s4 playerHand p2 dealerHand d2]
+      (let [deck (state :deck) pVal (getHandValue playerHand) dVal (getHandValue dealerHand) s (popCard deck)]
+        (cond
+          (shouldHit? playerHand dealerHand layers weights) (recur s (conj playerHand (s :card)) dealerHand)
           (< dVal 17) (recur s playerHand (conj dealerHand (s :card)))
           (and (> pVal 21) (> dVal 21)) 0
           (> pVal 21) -1
