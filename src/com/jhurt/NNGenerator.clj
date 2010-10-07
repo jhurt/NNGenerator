@@ -161,7 +161,7 @@
 
 (defn checkBreedGeneration
   "check to see if the generation is ready to breed"
-  [generation population nnType]
+  [generation population nnType inputArity outputArity]
   (println "currently have " (count population) " population for generation: " generation)
   (if (= (getNumberOfSlaves) (count population))
     (do
@@ -176,8 +176,6 @@
             (let [child (GA/getHealthiestChild population)
                   layers (child :layers)
                   weights (child :weights)
-                  inputArity 2
-                  outputArity 1
                   canvas (Graph/getNewCanvas weights layers inputArity outputArity)
                   saveNetworkButton (getSaveNetworkButton child canvas)]
               (println "resultant nn: " child)
@@ -192,13 +190,13 @@
 
 (defn addToPopulation
   "add a new child to it's population, each generation will have its own population"
-  [generation p nnType]
+  [generation p nnType inputArity outputArity]
   (dosync
     (let [population (@generationToPopulation generation)]
       (if (seq population)
         (ref-set generationToPopulation (conj @generationToPopulation {generation (conj population p)}))
         (ref-set generationToPopulation (conj @generationToPopulation {generation (list p)})))))
-  (checkBreedGeneration generation (@generationToPopulation generation) nnType))
+  (checkBreedGeneration generation (@generationToPopulation generation) nnType inputArity outputArity))
 
 (defn updateConnectedPeers []
   ;fire a table data change event
@@ -222,21 +220,21 @@
     (if-not (nil? specimen)
       (let [generation (specimen :generation)]
         (if-not (nil? generation)
-          (addToPopulation generation specimen Comm/TRAIN_XOR))))))
+          (addToPopulation generation specimen Comm/TRAIN_XOR 2 1))))))
 
 (defmethod handleIncomingMessage Comm/FINISH_TRAIN_SB [msg]
   (let [specimen (deserialize (.getText msg))]
     (if-not (nil? specimen)
       (let [generation (specimen :generation)]
         (if-not (nil? generation)
-          (addToPopulation generation specimen Comm/TRAIN_SB))))))
+          (addToPopulation generation specimen Comm/TRAIN_SB 2 1))))))
 
 (defmethod handleIncomingMessage Comm/FINISH_TRAIN_OCR [msg]
   (let [specimen (deserialize (.getText msg))]
     (if-not (nil? specimen)
       (let [generation (specimen :generation)]
         (if-not (nil? generation)
-          (addToPopulation generation specimen Comm/TRAIN_OCR))))))
+          (addToPopulation generation specimen Comm/TRAIN_OCR 16 4))))))
 
 (def dfltMessageListener (proxy [MessageListener] []
   (onMessage [message]
@@ -284,10 +282,12 @@
   (.addActionListener (proxy [ActionListener] []
     (actionPerformed [e] (exit))))))
 
-(defn sendTrainingMessages [nnType]
+(defn sendTrainingMessages
+  "send the initial set of training messages to the slaves"
+  [nnType outputArity]
   (loop [n (getNumberOfSlaves)]
     (if (>= n 0)
-      (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) 1)
+      (let [layers (Common/randomNetworkLayers (getMaxLayers) (getMaxNodesPerLayer) outputArity)
             alpha (Common/randomAlpha)
             gamma (Common/randomGamma)
             msg {:layers layers :training-cycles (getMaxTrainingCycles) :generation 1
@@ -302,19 +302,22 @@
     (.setValue progressBar 0)
     (.setVisible progressBar true)))
 
-(defn getTrainMenuItem [item nnType]
+(defn getTrainMenuItem
+  "attach a train network listener to a JMenuItem"
+  [item nnType outputArity]
   (doto item
     (.addActionListener (proxy [ActionListener] []
       (actionPerformed [e]
         (ThreadUtils/onThread
           (fn []
             (dosync (ref-set generationToResults {}) (ref-set generationToPopulation {}))
-            (sendTrainingMessages nnType)
+            (sendTrainingMessages nnType outputArity)
             (SwingUtils/doOnEdt #((disableTrain))))))))))
 
 (def fileMenu (doto (new JMenu "File")
-  (.add (getTrainMenuItem generateXorMenuItem Comm/TRAIN_XOR))
-  (.add (getTrainMenuItem generateSbMenuItem Comm/TRAIN_SB))
+  (.add (getTrainMenuItem generateXorMenuItem Comm/TRAIN_XOR 1))
+  (.add (getTrainMenuItem generateSbMenuItem Comm/TRAIN_SB 1))
+  (.add (getTrainMenuItem generateOcrMenuItem Comm/TRAIN_OCR 4))
   (.addSeparator)
   (.add exitMenuItem)))
 

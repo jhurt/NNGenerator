@@ -12,17 +12,24 @@
 (ns
   #^{:author "Jason Lee Hurt"}
   com.jhurt.nn.trainer.OCR
-  (:require [com.jhurt.nn.ActivationFunctions :as Afns])
-  (:require [com.jhurt.nn.BackPropagation :as BP]))
+  (:require [com.jhurt.nn.BackPropagation :as BP])
+  (:require [com.jhurt.CollectionsUtils :as CU])
+  (:require [com.jhurt.image.MNIST :as MNIST])
+  (:use [com.jhurt.nn.Common])
+  (:use [com.jhurt.Math]))
 
+(def data (ref nil))
 
-(defn getImageData [])
-
+(defn getTrainingDatum
+  "called by the back-propagation algorithm to get a training input/output pair"
+  []
+  (if (empty? @data) (dosync (ref-set data (MNIST/getInputOutputPairs))))
+  (let [input (first (keys @data)) output (@data input)]
+    {:input input :output output}))
 
 (defn train
-  "train a NN with data from a set of characters"
+  "train an OCR digit recognition NN"
   [layers numCycles generation alpha gamma callback]
-  (let [weights (getRandomWeightMatrices layers 2 1)
-        result (BP/train numCycles layers XOR-table weights alpha gamma)]
+  (let [weights (getRandomWeightMatrices layers 16 4)
+        result (BP/trainNetwork numCycles layers getTrainingDatum weights alpha gamma)]
     (callback (result :weights) (result :rms-error) generation layers alpha gamma)))
-

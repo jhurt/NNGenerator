@@ -68,6 +68,7 @@
             <arg value="com.jhurt.image.FFT" />
             <arg value="com.jhurt.image.ImageUI" />
             <arg value="com.jhurt.image.ImageUtils" />
+            <arg value="com.jhurt.image.MNIST" />
 
 			<arg value="com.jhurt.nn.ActivationFunctions" />
 			<arg value="com.jhurt.nn.BackPropagation" />

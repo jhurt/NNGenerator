@@ -15,13 +15,18 @@
 (ns
   #^{:author "Jason Lee Hurt"}
   com.jhurt.image.MNIST
-  (:require clojure.java.io))
+  (:use clojure.java.io))
 
 (import
   '(java.awt.image BufferedImage ImageObserver FilteredImageSource)
   '(java.io DataInputStream File)
   '(javax.imageio ImageIO)
   '(java.awt Graphics))
+
+(def trainingLabels "train-labels-idx1-ubyte")
+(def trainingImages "train-images-idx3-ubyte")
+(def testLabels "t10k-labels-idx1-ubyte")
+(def testImages "t10k-images-idx3-ubyte")
 
 (defn- extractLabels [stream count]
   (loop [labels [] c count]
@@ -37,6 +42,31 @@
     ;pop the magic number
     (.readInt stream)
     (extractLabels stream count)))
+
+(defn getOutputs [labels]
+  (let [binaryStrings (map (fn [x] (Integer/toString x 2)) labels)
+        paddedStrings (map (fn [x] (let [pad (- 4 (count x))] (str (reduce str (repeat pad "0")) x))) binaryStrings)]
+    (map (fn [x] (map (fn [y] (Integer/parseInt (str y))) (.toCharArray x))) paddedStrings)))
+
+(defn- extractGrid
+  "extract a 4x4 grid from the image in the form of a one dimensional array"
+  [image]
+  (loop [i 0 j 0 grid []]
+    (let [upperRow (* 7 (inc i)) upperCol (* 7 (inc j))
+          rows (subvec image i upperRow)
+          totalPixels (reduce + (flatten (map (fn [row] (subvec row j upperCol)) rows)))
+          averagePixel (/ totalPixels 49)]
+      (cond
+        (< averagePixel 60) (recur (inc i) (inc j) (conj grid 0))
+        :else (recur (inc i) (inc j) (conj grid 1))))))
+
+(defn- extractInputs [stream count width height]
+  (loop [inputs [] rows [] row [] c count w 0 h 0]
+    (cond
+      (= 0 c) (do (.close stream) inputs)
+      (= w width) (recur inputs (conj rows row) [] c 0 (inc h))
+      (= h height) (recur (conj inputs (extractGrid rows)) [] [] (dec c) 0 0)
+      :else (recur inputs rows (conj row (.readUnsignedByte stream)) c (inc w) h))))
 
 (defn- extractImages [stream count width height]
   (loop [images [] rows [] row [] c count w 0 h 0]
@@ -54,4 +84,10 @@
         total (do (.readInt stream))
         width (do (.readInt stream))
         height (do (.readInt stream))]
-    (extractImages stream total width height)))
+    (extractInputs stream total width height)))
+
+(defn getInputOutputPairs []
+  (let [inputs (readImages trainingImages)
+        labels (readLabels trainingLabels)
+        outputs (getOutputs labels)]
+    (zipmap inputs outputs)))

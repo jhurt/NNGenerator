@@ -50,13 +50,18 @@
 (defn sbTrainCallback
   "called after a network has been trained by a trainer"
   [weights error generation layers alpha gamma]
-  (let [; this is a small hack because serializing NaN and deserializing it will result
-        ; in a symbol instead of Double/NaN, so we send 1.0 in the case of NaN
-        ; this should ideally be fixed in Clojure at some point
-        e (if (> error 0.0) error 1.0)
+  (let [e (if (> error 0.0) error 1.0)
         msg {:weights weights :error e :generation generation :layers layers :alpha alpha :gamma gamma}]
     (println "\n***Slave " @myName " TRAINED SimpleBlackjack NETWORK for generation: " generation ",error=" e ",alpha=" alpha ",gamma=" gamma)
     (Comm/publishMessage @masterPublisher Comm/FINISH_TRAIN_SB (serialize msg))))
+
+(defn ocrTrainCallback
+  "called after a network has been trained by a trainer"
+  [weights error generation layers alpha gamma]
+  (let [e (if (> error 0.0) error 1.0)
+        msg {:weights weights :error e :generation generation :layers layers :alpha alpha :gamma gamma}]
+    (println "\n***Slave " @myName " TRAINED OCR NETWORK for generation: " generation ",error=" e ",alpha=" alpha ",gamma=" gamma)
+    (Comm/publishMessage @masterPublisher Comm/FINISH_TRAIN_OCR (serialize msg))))
 
 ;a multimethod for handling incoming messages
 ;the dispatch function is the name of the message
@@ -74,6 +79,12 @@
   (let [trainMsg (deserialize (.getText msg))]
     (SB/train
       (trainMsg :layers) (trainMsg :training-cycles) (trainMsg :generation) (trainMsg :alpha) (trainMsg :gamma) sbTrainCallback)))
+
+(defmethod handleIncomingMessage Comm/TRAIN_OCR
+  [msg]
+  (let [trainMsg (deserialize (.getText msg))]
+    (SB/train
+      (trainMsg :layers) (trainMsg :training-cycles) (trainMsg :generation) (trainMsg :alpha) (trainMsg :gamma) ocrTrainCallback)))
 
 (def dfltMessageListener (proxy [MessageListener] []
   (onMessage [message]
