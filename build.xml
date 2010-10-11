@@ -79,7 +79,7 @@
 			<arg value="com.jhurt.nn.PerceptronHaykin" />
 			<arg value="com.jhurt.nn.PerceptronRojas" />
 
-            <arg value="com.jhurt.nn.trainer.FacialRecognition" />
+            <arg value="com.jhurt.nn.trainer.OCR" />
             <arg value="com.jhurt.nn.trainer.SimpleBlackjack" />
             <arg value="com.jhurt.nn.trainer.XOR" />
 
@@ -120,20 +120,24 @@
 
 	<target name="build" depends="clean, compile, jar" />
 
-	<target name="dist" depends="build">
-		<mkdir dir="${dist.dir}" />
-		<copy todir="${dist.dir}">
-			<fileset dir=".">
-				<include name="nn.jar" />
-			</fileset>
-			<fileset dir="${scripts.dir}/linux">
-				<include name="*.sh" />
-			</fileset>
-            <fileset dir="${piccolo.lib.dir}" includes="**/*.jar" />
-			<fileset dir="${activemq.lib.dir}" includes="**/*.jar" />
-			<fileset dir="${clojure.lib.dir}" includes="clojure.jar" />
-		</copy>
-	</target>
+    <target name="dist" depends="build">
+        <mkdir dir="${dist.dir}"/>
+        <copy todir="${dist.dir}">
+            <fileset dir=".">
+                <include name="nn.jar"/>
+            </fileset>
+            <fileset dir="${scripts.dir}/linux">
+                <include name="*.sh"/>
+            </fileset>
+            <fileset dir="${ocr.train.dir}">
+                <include name="nn_test_data"/>
+                <include name="nn_training_data"/>
+            </fileset>
+            <fileset dir="${piccolo.lib.dir}" includes="**/*.jar"/>
+            <fileset dir="${activemq.lib.dir}" includes="**/*.jar"/>
+            <fileset dir="${clojure.lib.dir}" includes="clojure.jar"/>
+        </copy>
+    </target>
 
 	<target name="run-tests" depends="compile-tests">
 		<junit showoutput="yes" printsummary="on" fork="yes" haltonfailure="yes">

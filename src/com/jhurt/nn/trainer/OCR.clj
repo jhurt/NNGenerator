@@ -23,9 +23,10 @@
 (defn getTrainingDatum
   "called by the back-propagation algorithm to get a training input/output pair"
   []
-  (if (empty? @data) (dosync (ref-set data (MNIST/getInputOutputPairs))))
-  (let [input (first (keys @data)) output (@data input)]
-    {:input input :output output}))
+  (if (empty? @data) (dosync (ref-set data (MNIST/loadTrainingPairs))))
+  (let [pair (first @data)]
+    (dosync (ref-set data (rest @data)))
+    pair))
 
 (defn train
   "train an OCR digit recognition NN"

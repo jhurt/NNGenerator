@@ -11,7 +11,8 @@
 
 (ns
   #^{:author "Jason Lee Hurt"}
-  com.jhurt.Serialization)
+  com.jhurt.Serialization
+  (:use [clojure.java.io]))
 
 (import
   '(java.io StringReader PushbackReader))
@@ -21,4 +22,8 @@
 
 (defn deserialize [x]
   (let [r (new PushbackReader (new StringReader x))]
+    (read r)))
+
+(defn deserializeFile [f]
+  (let [r (new PushbackReader (reader f))]
     (read r)))

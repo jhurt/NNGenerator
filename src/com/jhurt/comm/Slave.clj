@@ -15,6 +15,7 @@
   (:gen-class)
   (:require [com.jhurt.nn.trainer.XOR :as XOR])
   (:require [com.jhurt.nn.trainer.SimpleBlackjack :as SB])
+  (:require [com.jhurt.nn.trainer.OCR :as OCR])
   (:require [com.jhurt.ThreadUtils :as ThreadUtils])
   (:require [com.jhurt.comm.Comm :as Comm])
   (:use [com.jhurt.Serialization]))
@@ -69,21 +70,23 @@
 
 (defmethod handleIncomingMessage Comm/TRAIN_XOR
   [msg]
-  ;(println "\n\nslave received train xor msg: " (.getText msg))
+  (println "\n\nslave received train xor msg: " (.getText msg))
   (let [trainMsg (deserialize (.getText msg))]
     (XOR/train
       (trainMsg :layers) (trainMsg :training-cycles) (trainMsg :generation) (trainMsg :alpha) (trainMsg :gamma) xorTrainCallback)))
 
 (defmethod handleIncomingMessage Comm/TRAIN_SB
   [msg]
+  (println "\n\nslave received train blackjack msg: " (.getText msg))
   (let [trainMsg (deserialize (.getText msg))]
     (SB/train
       (trainMsg :layers) (trainMsg :training-cycles) (trainMsg :generation) (trainMsg :alpha) (trainMsg :gamma) sbTrainCallback)))
 
 (defmethod handleIncomingMessage Comm/TRAIN_OCR
   [msg]
+  (println "\n\nslave received train ocr msg: " (.getText msg))
   (let [trainMsg (deserialize (.getText msg))]
-    (SB/train
+    (OCR/train
       (trainMsg :layers) (trainMsg :training-cycles) (trainMsg :generation) (trainMsg :alpha) (trainMsg :gamma) ocrTrainCallback)))
 
 (def dfltMessageListener (proxy [MessageListener] []
