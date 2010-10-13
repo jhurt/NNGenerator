@@ -135,6 +135,40 @@
                       (SwingUtils/doOnEdt
                         #((JOptionPane/showMessageDialog c "Successfully Saved!"))))))))))))))
 
+(defn getResultsTableModel
+  "get a table model for the results tabel"
+  [generationToResults]
+  (proxy [AbstractTableModel] []
+    (getColumnName [index]
+      (cond (== 0 index) "Generation"
+        (== 1 index) "Lowest RMS"
+        (== 2 index) "Average RMS"))
+    (getRowCount [] (count generationToResults))
+    (getColumnCount [] 3)
+    (getValueAt [rowIndex columnIndex]
+      (let [generation (inc rowIndex)
+            breedResult (generationToResults generation)]
+        (if-not (nil? breedResult)
+          (cond (== 0 columnIndex) generation
+            (== 1 columnIndex) (str (breedResult :lowest-rms))
+            (== 2 columnIndex) (str (breedResult :average-rms))))))))
+
+(defn launchResultsWindow [generationToResults]
+  (let [frame (new JFrame)
+        tablePane (new JScrollPane (doto (new JTable) (.setModel (getResultsTableModel generationToResults))))
+        panel
+        (doto
+          (new JPanel)
+          (.setLayout (new BorderLayout))
+          (.setBackground Color/WHITE)
+          (.add tablePane BorderLayout/CENTER))]
+    (doto frame
+      (.add panel)
+      (.setTitle "Breed Results")
+      (.pack)
+      (.setSize 800 600)
+      (.setVisible true))))
+
 (defn launchGraphWindow [canvas saveButton rmsError]
   (let [frame (new JFrame)
         panel
@@ -179,7 +213,7 @@
                   canvas (Graph/getNewCanvas weights layers inputArity outputArity)
                   saveNetworkButton (getSaveNetworkButton child canvas)]
               (println "resultant nn: " child)
-              (println "results: " @generationToResults) 
+              (launchResultsWindow @generationToResults)
               (launchGraphWindow canvas saveNetworkButton (child :error)))))
         ;breed the population
         (do
