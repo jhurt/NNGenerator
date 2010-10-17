@@ -49,7 +49,7 @@
   (if (and (not (empty? matrixA)) (not (empty? matrixB)))
     (conj
       (matrixAdd (rest matrixA) (rest matrixB))
-      (map + (first matrixA) (first matrixB)))))
+      (doall (map + (first matrixA) (first matrixB))))))
 
 (defn matrixSubtract [matrixA matrixB]
   (if (and (seq matrixA) (seq matrixB))
