@@ -109,10 +109,10 @@
         (concat (vector input) nodeOutputs)
         (reverse errors)))
 
-(defn getTotalRmsError
-  "return the total of all rms errors for each input of the inputToErrorMap"
+(defn getAverageRmsError
+  "return the average of all rms errors for all values of the inputToErrorMap"
   [inputToErrorMap]
-  (reduce + (vals inputToErrorMap)))
+  (/ (reduce + (vals inputToErrorMap)) (count inputToErrorMap)))
 
 (defn trainNetwork
   "Train the network with the given input/output map and initial weight set
@@ -146,4 +146,4 @@
           (map matrixAdd weights deltasWithMomentum)
           deltasWithMomentum
           (assoc inputToErrorMap input rmsError)))
-      {:rms-error (getTotalRmsError inputToErrorMap) :weights weights})))
+      {:rms-error (getAverageRmsError inputToErrorMap) :weights weights})))
