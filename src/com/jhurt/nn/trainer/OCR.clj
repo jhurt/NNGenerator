@@ -12,24 +12,11 @@
 (ns
   #^{:author "Jason Lee Hurt"}
   com.jhurt.nn.trainer.OCR
-  (:gen-class)
   (:require [com.jhurt.nn.BackPropagation :as BP])
-  (:require [com.jhurt.CollectionsUtils :as CU])
   (:require [com.jhurt.image.MNIST :as MNIST])
-  (:use [com.jhurt.nn.ActivationFunctions])
-  (:use [com.jhurt.nn.Common])
-  (:use [com.jhurt.Math]))
+  (:use [com.jhurt.nn.Common :only (getRandomWeightMatrices)]))
 
 (def data (ref nil))
-
-;(let [data (MNIST/loadTrainingPairs)
-;      i (ref 0)]
-;  (defn getTrainingDatum
-;    "called by the back-propagation algorithm to get a training input/output pair"
-;    []
-;    (let [pair (nth data @i)]
-;      (dosync (ref-set i (inc @i)))
-;      pair)))
 
 (defn getTrainingDatum
   "called by the back-propagation algorithm to get a training input/output pair"
@@ -39,6 +26,16 @@
     (dosync (ref-set data (rest @data)))
     pair))
 
+;; this version uses a closure rather than a global ref, but is slower
+;(let [data (MNIST/loadTrainingPairs)
+;      i (ref 0)]
+;  (defn getTrainingDatum
+;    "called by the back-propagation algorithm to get a training input/output pair"
+;    []
+;    (let [pair (nth data @i)]
+;      (dosync (ref-set i (inc @i)))
+;      pair)))
+
 (defn train
   "train an OCR digit recognition NN"
   [layers numCycles generation alpha gamma callback]
@@ -46,14 +43,3 @@
         result (BP/trainNetwork numCycles layers getTrainingDatum weights alpha gamma)]
     (callback (result :weights) (result :rms-error) generation layers alpha gamma)))
 
-(def layers (vector
-  {:number-of-nodes 10 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
-  {:number-of-nodes 10 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}
-  {:number-of-nodes 4 :activation-fn hyperbolicTangent :derivative-fn hyperbolicTangentDerivative}))
-
-(defn -main [& args]
-  (try
-    (let [weights (getRandomWeightMatrices layers 16 4)]
-      (println (BP/trainNetwork 60000 layers getTrainingDatum weights 0.1 -0.9)))
-    (catch StackOverflowError e
-      (doall (map (fn [x] (println (.getClassName x) " " (.getMethodName x) " " (.getLineNumber x))) (.getStackTrace e))))))

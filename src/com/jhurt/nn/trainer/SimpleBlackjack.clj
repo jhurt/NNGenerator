@@ -11,11 +11,10 @@
 
 (ns com.jhurt.nn.trainer.SimpleBlackjack
   #^{:author "Jason Lee Hurt"}
-  (:gen-class)
   (:require [com.jhurt.nn.BackPropagation :as BP])
   (:require [com.jhurt.CollectionsUtils :as CU])
-  (:use [com.jhurt.nn.Common])
-  (:use [com.jhurt.Math]))
+  (:use [com.jhurt.nn.Common :only (getRandomWeightMatrices)])
+  (:use [com.jhurt.Math :only (randomBounded)]))
 
 (def currentSet (ref nil))
 

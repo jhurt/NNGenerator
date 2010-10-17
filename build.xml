@@ -78,6 +78,7 @@
 			<arg value="com.jhurt.nn.Input" />
 			<arg value="com.jhurt.nn.PerceptronHaykin" />
 			<arg value="com.jhurt.nn.PerceptronRojas" />
+            <arg value="com.jhurt.nn.TestRunner" />
 
             <arg value="com.jhurt.nn.trainer.OCR" />
             <arg value="com.jhurt.nn.trainer.SimpleBlackjack" />
