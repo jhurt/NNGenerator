@@ -156,11 +156,9 @@
         layers (Common/randomNetworkLayers 4 5 outputArity)
         weights (Common/getRandomWeightMatrices layers inputArity outputArity)
         canvas (getNewCanvas weights layers inputArity outputArity)]
-    (println "count weights: " (count weights) " count layers: " (count layers))
-    (println "\n\nlayers: " layers)
     (.. frame (getContentPane) (add canvas))
     (doto frame
-      (.setTitle "NN Graph")
+      (.setTitle "Neural Network Structure")
       (.setSize 800 600)
       (.setDefaultCloseOperation JFrame/EXIT_ON_CLOSE)
       (.setVisible true))))
