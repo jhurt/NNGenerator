@@ -45,7 +45,8 @@
 (def jmsBrokerPort (ref "61616"))
 
 ;immutable state
-(def masterButton (new JButton "Connect Master"))
+(def fileExtension ".nn")
+(def masterButton (new JButton "Begin Listening"))
 
 (def inputMaxLayers (doto (new JTextField 10) (.setText "5")))
 (defn getMaxLayers []
@@ -97,8 +98,8 @@
           (== 3 columnIndex) (str (new Date (.getJMSTimestamp msg)))))))))
 
 (def fileFilterNN (proxy [FileFilter] []
-  (accept [f] (or (.isDirectory f) (.endsWith (.getName f) ".nn")))
-  (getDescription [] "Neural Network Files")))
+  (accept [f] (or (.isDirectory f) (.endsWith (.getName f) fileExtension)))
+  (getDescription [] "NNGenerator Files")))
 
 (defn breed
   "breed the generation, this method assumes the entire population for the generation have been received"
@@ -129,7 +130,7 @@
               (let [fileChooser (doto (new JFileChooser) (.setFileFilter fileFilterNN))]
                 (if (= JFileChooser/APPROVE_OPTION (.showSaveDialog fileChooser c))
                   (do
-                    (let [saveFile (new File (str (.getAbsolutePath (.getSelectedFile fileChooser)) ".nn"))
+                    (let [saveFile (new File (str (.getAbsolutePath (.getSelectedFile fileChooser)) fileExtension))
                           writer (new FileWriter saveFile)]
                       (doto writer (.write (serialize nn)) (.flush) (.close))
                       (SwingUtils/doOnEdt
@@ -380,13 +381,13 @@
 
     (set! (.gridx constraints) 0)
     (set! (.gridy constraints) 2)
-    (.add topLeftPanel (new JLabel "Maximum # of Nodes Per Layer:") constraints)
+    (.add topLeftPanel (new JLabel "Maximum # of Nodes Per Hidden Layer:") constraints)
     (set! (.gridx constraints) 1)
     (.add topLeftPanel inputMaxNodesPerLayer constraints)
 
     (set! (.gridx constraints) 0)
     (set! (.gridy constraints) 3)
-    (.add topLeftPanel (new JLabel "Maximum # of Training Cycles:") constraints)
+    (.add topLeftPanel (new JLabel "# of Training Cycles:") constraints)
     (set! (.gridx constraints) 1)
     (.add topLeftPanel inputMaxTrainingCycles constraints)
 
@@ -398,7 +399,7 @@
 
     (set! (.gridx constraints) 0)
     (set! (.gridy constraints) 5)
-    (.add topLeftPanel (new JLabel "# of Slaves:") constraints)
+    (.add topLeftPanel (new JLabel "Population Size:") constraints)
     (set! (.gridx constraints) 1)
     (.add topLeftPanel inputNumberOfSlaves constraints)
 
@@ -429,7 +430,7 @@
   (.setDividerLocation 0.85)))
 
 (defn -main [& args]
-  (let [frame (new JFrame "Neural Network UI")]
+  (let [frame (new JFrame "NNGenerator")]
     (dosync (ref-set jmsBrokerIp (first args)) (ref-set jmsBrokerPort (nth args 1)))
     (SwingUtils/setSizeBasedOnResolution frame)
     (layoutTopLeftPanel)
