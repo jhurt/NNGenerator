@@ -13,6 +13,7 @@
   #^{:author "Jason Lee Hurt"}
   com.jhurt.ga.GA
   (:use [com.jhurt.Math :only (randomBounded)])
+  (:require [com.jhurt.nn.Common :as Common])
   (:require [com.jhurt.nn.ActivationFunctions :as Afns])
   (:require [com.jhurt.CollectionsUtils :as CU]))
 
@@ -103,6 +104,13 @@
     (crossover1 layersNN1 layersNN2)
     (crossover2 layersNN1 layersNN2)))
 
+(defn getRandomChild
+  "generate a random child"
+  [maxLayers maxNodesPerLayer outputArity]
+  {:layers (Common/randomNetworkLayers maxLayers maxNodesPerLayer outputArity)
+   :alpha (Common/randomAlpha)
+   :gamma (Common/randomGamma)})
+
 (defn getChild
   "get a new child based on 2 parents"
   [p1 p2]
@@ -155,12 +163,13 @@
     (assert (= 1 (count selection)))
     (:result (first selection))))
 
-(defn breed [trainResults newPopulationSize]
+(defn breed [trainResults newPopulationSize maxLayers maxNodesPerLayer outputArity]
   (let [parents (getBestResults (int (* 0.5 newPopulationSize)) trainResults)
         rouletteWheel (getRouletteWheel parents)]
     (loop [children [] r (rand 1)]
       (cond (= newPopulationSize (count children)) children
         ;reproduction
         (< r 0.25) (recur (conj children (selectParent rouletteWheel)) (rand 1))
+        (< r 0.30) (recur (conj children (getRandomChild maxLayers maxNodesPerLayer outputArity)) (rand 1))
         ;crossover
         :else (recur (conj children (getChild (selectParent rouletteWheel) (selectParent rouletteWheel))) (rand 1))))))

@@ -103,14 +103,14 @@
 
 (defn breed
   "breed the generation, this method assumes the entire population for the generation have been received"
-  [generation population nnType]
+  [generation population nnType outputArity]
   (doall (map
     (fn [child]
       (let [msg {:layers (child :layers)
                  :training-cycles (getMaxTrainingCycles) :generation (inc generation)
                  :alpha (child :alpha) :gamma (child :gamma)}]
         (Comm/publishMessage @slavesPublisher nnType (serialize msg))))
-    (GA/breed population (getNumberOfSlaves)))))
+    (GA/breed population (getNumberOfSlaves) (getMaxLayers) (getMaxNodesPerLayer) outputArity))))
 
 (defn removePopulation [generation]
   (let [p (@generationToPopulation generation)]
@@ -218,7 +218,7 @@
               (launchGraphWindow canvas saveNetworkButton (child :error)))))
         ;breed the population
         (do
-          (breed generation population nnType)
+          (breed generation population nnType outputArity)
           (SwingUtils/doOnEdt
             #(do
               (.setValue progressBar generation))))))))
