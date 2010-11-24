@@ -92,6 +92,7 @@
             <arg value="com.jhurt.Plot3D" />
             <arg value="com.jhurt.Serialization" />
             <arg value="com.jhurt.SwingUtils" />
+            <arg value="com.jhurt.Tester" />
             <arg value="com.jhurt.ThreadUtils" />
             <arg value="com.jhurt.UI" />
 		</java>

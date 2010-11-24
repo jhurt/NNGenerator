@@ -20,6 +20,21 @@
 
 (defstruct Card :symbol :value)
 
+(defn toBinaryString [x length]
+  (loop [x (Integer/toString x 2)]
+    (if (< (.length x) length) (recur (str "0" x)) x)))
+
+(defn getEncodedHands [playerHand dealerCard]
+    (loop [pStr (toBinaryString playerHand 5)
+           dStr (toBinaryString dealerCard 4)
+           encoded []]
+      (cond
+        (< (count encoded) 5)
+          (recur (.substring pStr 1) dStr (conj encoded (Integer/parseInt (.substring pStr 0 1))))
+        (< (count encoded) 9)
+          (recur pStr (.substring dStr 1) (conj encoded (Integer/parseInt (.substring dStr 0 1))))
+        :else encoded)))
+
 (defn getHandValue [hand]
   ((reduce (fn [x y] (let [upper (+ (x :value) (y :value))]
     (cond
@@ -114,8 +129,9 @@
   (if (empty? @currentSet) (dosync (ref-set currentSet (makeSet))))
   (assert (not (empty? @currentSet)))
   (let [state (first @currentSet)
-        input (vector (getHandValue (state :playerHand)) ((first (rest (state :dealerHand))) :value))
+        input (getEncodedHands (getHandValue (state :playerHand)) ((first (rest (state :dealerHand))) :value))
         output [(getOutcome state)]]
+    (println "outcome " output)
     (dosync (ref-set currentSet (rest @currentSet)))
     {:input input :output output}))
 
@@ -130,8 +146,8 @@
   "play by dealer rules, staying at 17 or greater.
    return a 0 for a tie, -1 for a loss, 1 for a win"
   []
-  (let [deck (vec (newDeck))
-        s1 (popCard deck)
+  (let [initialDeck (vec (newDeck))
+        s1 (popCard initialDeck)
         s2 (popCard (s1 :deck))
         s3 (popCard (s2 :deck))
         s4 (popCard (s3 :deck))
@@ -154,15 +170,16 @@
 (defn- shouldHit?
   "return true if the NN determines the player should hit, else false"
   [playerHand dealerHand layers weights]
-  (let [input (vector (getHandValue playerHand) ((first (rest dealerHand)) :value))
+  (let [input (getEncodedHands (getHandValue playerHand) ((first (rest dealerHand)) :value))
         output (BP/calculateOutput layers input weights)]
-    (if (> output 0) true false)))
+    (println "input " input ", output " output)
+    (if (> (first output) 0) true false)))
 
 (defn playWithTrainedPlayer
   "play with a trained player NN. return a 0 for a tie, -1 for a loss, 1 for a win"
   [layers weights]
-  (let [deck (vec (newDeck))
-        s1 (popCard deck)
+  (let [initialDeck (vec (newDeck))
+        s1 (popCard initialDeck)
         s2 (popCard (s1 :deck))
         s3 (popCard (s2 :deck))
         s4 (popCard (s3 :deck))
@@ -173,11 +190,27 @@
     (loop [state s4 playerHand p2 dealerHand d2]
       (let [deck (state :deck) pVal (getHandValue playerHand) dVal (getHandValue dealerHand) s (popCard deck)]
         (cond
-          (shouldHit? playerHand dealerHand layers weights) (recur s (conj playerHand (s :card)) dealerHand)
-          (< dVal 17) (recur s playerHand (conj dealerHand (s :card)))
           (and (> pVal 21) (> dVal 21)) 0
           (> pVal 21) -1
           (> dVal 21) 1
+          (and (< pVal 21) (shouldHit? playerHand dealerHand layers weights))
+            (recur s (conj playerHand (s :card)) dealerHand)
+          (< dVal 17)
+            (recur s playerHand (conj dealerHand (s :card)))
           (= pVal dVal) 0
           (> pVal dVal) 1
           :else -1)))))
+
+(defn getBlackjackResults [nn iterations]
+    (loop [results []
+           i 0]
+      (if (< i iterations)
+        (recur (conj results (playWithTrainedPlayer (nn :layers) (nn :weights))) (inc i))
+        results)))
+
+(defn getBlackjackResults2 [nn iterations]
+    (loop [results []
+           i 0]
+      (if (< i iterations)
+        (recur (conj results (playDealerRules)) (inc i))
+        results)))

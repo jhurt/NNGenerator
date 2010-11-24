@@ -34,9 +34,9 @@
 (defn -testCrossover1HasLeastLayers [_]
   (let [x (getLayers 10)
         y (getLayers 20)
-        a (crossover1 x y)
-        b (crossover1 x x)
-        c (crossover1 y y)]
+        a (crossover1 x y 100)
+        b (crossover1 x x 100)
+        c (crossover1 y y 100)]
     (Assert/assertEquals 10 (count a))
     (Assert/assertEquals 10 (count b))
     (Assert/assertEquals 20 (count c))))
@@ -44,28 +44,28 @@
 (defn -testCrossover1PreservesNumberOfLastLayerNodes [_]
   (let [x (conj (getLayers 10) {:number-of-nodes 1 :activation-fn logistic :derivative-fn logisticDerivative})
         y (conj (getLayers 100) {:number-of-nodes 1 :activation-fn logistic :derivative-fn logisticDerivative})
-        a (crossover1 x y)
-        b (crossover1 y x)]
+        a (crossover1 x y 100)
+        b (crossover1 y x 100)]
     (Assert/assertEquals 1 ((last a) :number-of-nodes))
     (Assert/assertEquals 1 ((last b) :number-of-nodes))))
 
 (defn -testCrossover2HasMostLayers [_]
   (let [x (getLayers 10)
         y (getLayers 15)
-        a (crossover2 x y)]
+        a (crossover2 x y 100)]
     (Assert/assertEquals 15 (count a))))
 
 (defn -testCrossover2HasMostLayers2 [_]
   (let [x (getLayers 10000)
         y (getLayers 100)
-        a (crossover2 x y)]
+        a (crossover2 x y 100)]
     (Assert/assertEquals 10000 (count a))))
 
 (defn -testCrossover2PreservesNumberOfLastLayerNodes [_]
   (let [x (conj (getLayers 10) {:number-of-nodes 1 :activation-fn logistic :derivative-fn logisticDerivative})
         y (conj (getLayers 100) {:number-of-nodes 1 :activation-fn logistic :derivative-fn logisticDerivative})
-        a (crossover2 x y)
-        b (crossover2 y x)]
+        a (crossover2 x y 10)
+        b (crossover2 y x 10)]
     (Assert/assertEquals 1 ((last a) :number-of-nodes))
     (Assert/assertEquals 1 ((last b) :number-of-nodes))))
 

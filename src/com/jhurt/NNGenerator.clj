@@ -262,7 +262,7 @@
     (if-not (nil? specimen)
       (let [generation (specimen :generation)]
         (if-not (nil? generation)
-          (addToPopulation generation specimen Comm/TRAIN_SB 2 1))))))
+          (addToPopulation generation specimen Comm/TRAIN_SB 9 1))))))
 
 (defmethod handleIncomingMessage Comm/FINISH_TRAIN_OCR [msg]
   (let [specimen (deserialize (.getText msg))]

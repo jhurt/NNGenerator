@@ -149,11 +149,11 @@
         weights (Common/getRandomWeightMatrices layers inputArity outputArity)]
     (getNewCanvas weights layers inputArity outputArity)))
 
-(defn -main []
+(defn -main [a b]
   (let [frame (new JFrame)
         inputArity 2
         outputArity 1
-        layers (Common/randomNetworkLayers 4 5 outputArity)
+        layers (Common/randomNetworkLayers (Integer/parseInt a) (Integer/parseInt b) outputArity)
         weights (Common/getRandomWeightMatrices layers inputArity outputArity)
         canvas (getNewCanvas weights layers inputArity outputArity)]
     (.. frame (getContentPane) (add canvas))

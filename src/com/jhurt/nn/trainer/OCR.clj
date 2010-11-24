@@ -43,3 +43,18 @@
         result (BP/trainNetwork numCycles layers getTrainingDatum weights alpha gamma)]
     (callback (result :weights) (result :rms-error) generation layers alpha gamma)))
 
+(defn getOcrResults [nn iterations]
+  (dosync (ref-set data (MNIST/loadTestPairs)))
+  (loop [i 0 pair (first @data) results []]
+      (dosync (ref-set data (rest @data)))
+      (cond
+        (or (nil? pair) (>= i iterations))
+          results
+        :else
+          (let [output (BP/calculateOutput (nn :layers) (pair :input) (nn :weights))
+                actualOutput (pair :output)
+                result (if (= output actualOutput) 1 0)]
+          (println "actual: " actualOutput ". output: " output)  
+          (recur (inc i) (first @data) (conj results result))))))
+
+

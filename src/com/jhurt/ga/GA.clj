@@ -26,14 +26,14 @@
 (defn getBestResults [num trainResults]
   (take num (sortTrainResults trainResults)))
 
-(defn mutate [layersNN1]
-  (map
-    (fn [ithLayerNN1]
-      (let [activationFn (ithLayerNN1 :activation-fn)
-            derivFn (ithLayerNN1 :derivative-fn)]
-        {:number-of-nodes (+ (ithLayerNN1 :number-of-nodes) (randomBounded -5 5))
-         :activation-fn activationFn :derivative-fn derivFn}))
-    layersNN1))
+;(defn mutate [layersNN1]
+;  (map
+;    (fn [ithLayerNN1]
+;      (let [activationFn (ithLayerNN1 :activation-fn)
+;            derivFn (ithLayerNN1 :derivative-fn)]
+;        {:number-of-nodes (+ (ithLayerNN1 :number-of-nodes) (randomBounded -5 5))
+;         :activation-fn activationFn :derivative-fn derivFn}))
+;    layersNN1))
 
 (defn getActivationFns [layer1 layer2]
   (if (> 0.5 (rand 1)) {:activation-fn (layer1 :activation-fn)
@@ -47,6 +47,14 @@
       (< x 0.3333333) c1
       (< x 0.6666667) c2
       :else (* 0.5 (+ c1 c2)))))
+
+(defn chooseConstantBounded [c1 c2 upper]
+  (let [x (rand 1)
+        y (cond
+            (< x 0.3333333) c1
+            (< x 0.6666667) c2
+            :else (* 0.5 (+ c1 c2)))]
+    (if (> y upper) upper y)))
 
 (defn crossoverBounded [c1 c2 lower upper]
   (let [sign (if (> c1 c2) 1.0 -1.0)
@@ -62,12 +70,12 @@
 (defn crossover1
   "perform a crossover on 2 NN structures, in this version the # of layers will be
   the least of layersNN1 and layersNN2"
-  [layersNN1 layersNN2]
+  [layersNN1 layersNN2 maxNodesPerLayer]
   (let [newLayers
         (vec (map
           (fn [ithLayerNN1 ithLayerNN2]
             (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
-              {:number-of-nodes (int (chooseConstant (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes)))
+              {:number-of-nodes (int (chooseConstantBounded (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes) maxNodesPerLayer))
                :activation-fn (activationFns :activation-fn)
                :derivative-fn (activationFns :derivative-fn)}))
           (butlast layersNN1) (butlast layersNN2)))
@@ -80,7 +88,7 @@
 (defn crossover2
   "perform a crossover on 2 NN structures, in this version the # of layers will be
   the most of layersNN1 and layersNN2"
-  [layersNN1 layersNN2]
+  [layersNN1 layersNN2 maxNodesPerLayer]
   (let [largestLayers (if (> (count layersNN1) (count layersNN2)) layersNN1 layersNN2)
         difference (Math/abs (- (count layersNN1) (count layersNN2)))
         numToRemove (- (count largestLayers) difference)
@@ -88,7 +96,7 @@
         (vec (map
           (fn [ithLayerNN1 ithLayerNN2]
             (let [activationFns (getActivationFns ithLayerNN1 ithLayerNN2)]
-              {:number-of-nodes (int (chooseConstant (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes)))
+              {:number-of-nodes (int (chooseConstantBounded (ithLayerNN1 :number-of-nodes) (ithLayerNN2 :number-of-nodes) maxNodesPerLayer))
                :activation-fn (activationFns :activation-fn)
                :derivative-fn (activationFns :derivative-fn)}))
           layersNN1 layersNN2))
@@ -99,10 +107,10 @@
                    :derivative-fn (activationFns :derivative-fn)}]
     (conj (vec (concat firstLayers middleLayers)) lastLayer)))
 
-(defn crossoverLayers [layersNN1 layersNN2]
+(defn crossoverLayers [layersNN1 layersNN2 maxNodesPerLayer]
   (if (or (= (count layersNN1) (count layersNN2)) (> 0.5 (rand 1)))
-    (crossover1 layersNN1 layersNN2)
-    (crossover2 layersNN1 layersNN2)))
+    (crossover1 layersNN1 layersNN2 maxNodesPerLayer)
+    (crossover2 layersNN1 layersNN2 maxNodesPerLayer)))
 
 (defn getRandomChild
   "generate a random child"
@@ -113,8 +121,8 @@
 
 (defn getChild
   "get a new child based on 2 parents"
-  [p1 p2]
-  (let [layers (crossoverLayers (:layers p1) (:layers p2))
+  [p1 p2 maxNodesPerLayer]
+  (let [layers (crossoverLayers (:layers p1) (:layers p2) maxNodesPerLayer)
         alpha (crossoverAlpha (:alpha p1) (:alpha p2))
         gamma (crossoverGamma (:gamma p1) (:gamma p2))]
     {:layers layers :alpha alpha :gamma gamma}))
@@ -170,6 +178,7 @@
       (cond (= newPopulationSize (count children)) children
         ;reproduction
         (< r 0.25) (recur (conj children (selectParent rouletteWheel)) (rand 1))
-        (< r 0.30) (recur (conj children (getRandomChild maxLayers maxNodesPerLayer outputArity)) (rand 1))
+        ;random selection
+        (< r 0.29) (recur (conj children (getRandomChild maxLayers maxNodesPerLayer outputArity)) (rand 1))
         ;crossover
-        :else (recur (conj children (getChild (selectParent rouletteWheel) (selectParent rouletteWheel))) (rand 1))))))
+        :else (recur (conj children (getChild (selectParent rouletteWheel) (selectParent rouletteWheel) maxNodesPerLayer)) (rand 1))))))
