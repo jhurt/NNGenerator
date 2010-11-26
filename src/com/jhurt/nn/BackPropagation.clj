@@ -34,7 +34,7 @@
             extI (concat i [1.0])
             nodeOutput (map activationFn (vectorByMatrix extI (first w)))]
         (recur nodeOutput
-          (rest w) (rest l) (concat nodeOutputs (vector nodeOutput)))))))
+          (rest w) (rest l) (conj nodeOutputs nodeOutput))))))
 
 (defn calculateNodeValues
   "Get the output of the activation function and the corresponding
@@ -56,8 +56,8 @@
           nodeOutput
           (rest w)
           (rest l)
-          (concat nodeOutputs (vector nodeOutput))
-          (concat nodeDerivatives (vector nodeDerivative)))))))
+          (conj nodeOutputs nodeOutput)
+          (conj nodeDerivatives nodeDerivative))))))
 
 (defn calculateNodeErrors
   "Get the backpropagated error for each node, the results are stored in
@@ -73,13 +73,13 @@
       (let [v (first o)
             dv (first d)
             difference
-            (if (= 0 (count errors))
-              (arrayLessAnother v actualOutput)
-              (matrixByVector (first w) (last errors)))
+              (if (= 0 (count errors))
+                (arrayLessAnother v actualOutput)
+                (matrixByVector (first w) (last errors)))
             error (map * dv difference)]
         (if (= 0 (count errors))
-          (recur (rest o) (rest d) w (concat errors (vector error)))
-          (recur (rest o) (rest d) (rest w) (concat errors (vector error))))))))
+          (recur (rest o) (rest d) w (conj errors error))
+          (recur (rest o) (rest d) (rest w) (conj errors error)))))))
 
 (defn calculateRmsError
   "Get the root mean squared error for the output layer of the network"
@@ -136,11 +136,13 @@
             errors (calculateNodeErrors nodeValues weights output)
             ;calculate weight deltas
             deltas (getWeightDeltas2 input (nodeValues :nodeOutputs) errors gamma)
-            deltasWithMomentum (if (nil? previousDeltas)
-              deltas
-              (map matrixAdd deltas (multiplyScalar previousDeltas alpha)))
+            deltasWithMomentum
+              (if (nil? previousDeltas)
+                deltas
+                (map matrixAdd deltas (multiplyScalar previousDeltas alpha)))
             ;get rms error
             rmsError (calculateRmsError (first errors))]
+        ;(println "input: " input ", output: " (last (nodeValues :nodeOutputs)) ", actualOutput: " output)
         ;update weights and recurse step
         (recur (dec n)
           (map matrixAdd weights deltasWithMomentum)

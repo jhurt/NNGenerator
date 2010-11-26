@@ -37,8 +37,9 @@
   (let [totalLayers (randomPositive maxLayers)]
     (loop [numLayers totalLayers
            layers []]
-      (let [activationFn (if (> 0.5 (rand 1)) logistic hyperbolicTangent)
-            derivFn (fnToDerivMap activationFn)]
+      (let [;activationFn (if (> 0.5 (rand 1)) logistic hyperbolicTangent)
+            activationFn logistic
+            derivFn logisticDerivative];(fnToDerivMap activationFn)]
         (if (== 0 numLayers)
           (conj layers {:number-of-nodes outputArity
                         :activation-fn activationFn

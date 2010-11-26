@@ -131,14 +131,13 @@
   (let [state (first @currentSet)
         input (getEncodedHands (getHandValue (state :playerHand)) ((first (rest (state :dealerHand))) :value))
         output [(getOutcome state)]]
-    (println "outcome " output)
     (dosync (ref-set currentSet (rest @currentSet)))
     {:input input :output output}))
 
 (defn train
   "train a blackjack player NN"
   [layers numCycles generation alpha gamma callback]
-  (let [weights (getRandomWeightMatrices layers 2 1)
+  (let [weights (getRandomWeightMatrices layers 9 1)
         result (BP/trainNetwork numCycles layers getTrainingDatum weights alpha gamma)]
     (callback (result :weights) (result :rms-error) generation layers alpha gamma)))
 
@@ -172,7 +171,7 @@
   [playerHand dealerHand layers weights]
   (let [input (getEncodedHands (getHandValue playerHand) ((first (rest dealerHand)) :value))
         output (BP/calculateOutput layers input weights)]
-    (println "input " input ", output " output)
+    ;(println "input " input ", output " output)
     (if (> (first output) 0) true false)))
 
 (defn playWithTrainedPlayer
@@ -191,8 +190,8 @@
       (let [deck (state :deck) pVal (getHandValue playerHand) dVal (getHandValue dealerHand) s (popCard deck)]
         (cond
           (and (> pVal 21) (> dVal 21)) 0
-          (> pVal 21) -1
           (> dVal 21) 1
+          (> pVal 21) -1
           (and (< pVal 21) (shouldHit? playerHand dealerHand layers weights))
             (recur s (conj playerHand (s :card)) dealerHand)
           (< dVal 17)
@@ -208,7 +207,7 @@
         (recur (conj results (playWithTrainedPlayer (nn :layers) (nn :weights))) (inc i))
         results)))
 
-(defn getBlackjackResults2 [nn iterations]
+(defn testBlackjackDealer [iterations]
     (loop [results []
            i 0]
       (if (< i iterations)

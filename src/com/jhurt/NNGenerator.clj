@@ -427,7 +427,7 @@
 (def splitPane (doto (new JSplitPane JSplitPane/HORIZONTAL_SPLIT leftPanel rightPanel)
   (.setContinuousLayout true)
   (.setOneTouchExpandable true)
-  (.setDividerLocation 0.85)))
+  (.setDividerLocation 0.80)))
 
 (defn -main [& args]
   (let [frame (new JFrame "NNGenerator")]

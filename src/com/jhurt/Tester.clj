@@ -17,9 +17,10 @@
   (:require [com.jhurt.nn.Clusterer :as Clusterer])
   (:require [com.jhurt.nn.Input :as Input])
   (:require [com.jhurt.nn.Common :as Common])
+  (:require [com.jhurt.nn.BackPropagation :as BP])
   (:use [com.jhurt.ThreadUtils])
-  (:use [com.jhurt.nn.trainer.SimpleBlackjack :only (getBlackjackResults)])
-  (:use [com.jhurt.nn.trainer.OCR :only (getOcrResults)])
+  (:use [com.jhurt.nn.trainer.SimpleBlackjack :only (getBlackjackResults testBlackjackDealer)])
+  (:use [com.jhurt.nn.trainer.OCR :only (getOcrResults getTrainingDatum)])
   (:use [com.jhurt.Serialization]))
 
 (import
@@ -31,6 +32,8 @@
   '(javax.imageio ImageIO)
   '(java.awt Graphics))
 
+(def blackjackIterations 50000)
+
 (def fileFilter (proxy [FileFilter] []
   (accept [f]
     (and (not (nil? f))
@@ -39,7 +42,7 @@
 
 (defn testBlackjack [nnFile]
   (let [nn (deserializeFile nnFile)
-        iterations 200
+        iterations blackjackIterations
         results (getBlackjackResults nn iterations)
         wins (filter (fn [x] (= x 1)) results)
         ties (filter (fn [x] (= x 0)) results)
@@ -55,10 +58,20 @@
           (if (= (JFileChooser/APPROVE_OPTION) (. fileChooser (showOpenDialog testBlackjackBtn)))
             (testBlackjack (.getSelectedFile fileChooser)))))))))
 
+(def testBlackjackDealerBtn (doto (new JButton "Test Blackjack")
+  (.addActionListener
+    (proxy [ActionListener] []
+      (actionPerformed [e]
+        (let [results (testBlackjackDealer blackjackIterations)
+              wins (filter (fn [x] (= x 1)) results)
+              ties (filter (fn [x] (= x 0)) results)
+              losses (filter (fn [x] (= x -1)) results)]
+          (println "wins: " (count wins) ", ties: " (count ties) ", losses: " (count losses))))))))
+
 (defn testOcr [nnFile]
   (let [nn (deserializeFile nnFile)
         iterations 2000
-        results (getOcrResults nn iterations)
+        results (getOcrResults (nn :layers) (nn :weights) iterations)
         correct (filter (fn [x] (= x 1)) results)
         incorrect (filter (fn [x] (= x 0)) results)]
     (println "correct: " (count correct) ", incorrect: " (count incorrect))))
@@ -72,9 +85,26 @@
           (if (= (JFileChooser/APPROVE_OPTION) (. fileChooser (showOpenDialog testOcrBtn)))
             (testOcr (.getSelectedFile fileChooser)))))))))
 
+(def trainOcrBtn (doto (new JButton "Train OCR")
+  (.addActionListener (proxy [ActionListener] []
+    (actionPerformed [e]
+      (let [layers (Common/randomNetworkLayers 1 500 4)
+            weights (Common/getRandomWeightMatrices layers 16 4)
+            cycles 30000
+            alpha 0.7
+            gamma -0.5
+            nn (BP/trainNetwork cycles layers getTrainingDatum weights alpha gamma)
+            iterations 10000
+            results (getOcrResults layers (nn :weights) iterations)
+            correct (filter (fn [x] (= x 1)) results)
+            incorrect (filter (fn [x] (= x 0)) results)]
+        (println "correct: " (count correct) ", incorrect: " (count incorrect))))))))
+
 (def buttonPanel (doto (new JPanel)
   (.add testBlackjackBtn)
-  (.add testOcrBtn)))
+  (.add testBlackjackDealerBtn)
+  (.add testOcrBtn)
+  (.add trainOcrBtn)))
 
 (defn -main [& args]
   (let [frame (new JFrame "Neural Network Tester")]

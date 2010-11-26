@@ -26,15 +26,6 @@
 (defn getBestResults [num trainResults]
   (take num (sortTrainResults trainResults)))
 
-;(defn mutate [layersNN1]
-;  (map
-;    (fn [ithLayerNN1]
-;      (let [activationFn (ithLayerNN1 :activation-fn)
-;            derivFn (ithLayerNN1 :derivative-fn)]
-;        {:number-of-nodes (+ (ithLayerNN1 :number-of-nodes) (randomBounded -5 5))
-;         :activation-fn activationFn :derivative-fn derivFn}))
-;    layersNN1))
-
 (defn getActivationFns [layer1 layer2]
   (if (> 0.5 (rand 1)) {:activation-fn (layer1 :activation-fn)
                         :derivative-fn (layer1 :derivative-fn)}
