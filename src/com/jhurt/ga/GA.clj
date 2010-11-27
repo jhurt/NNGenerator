@@ -159,8 +159,9 @@
   [rouletteWheel]
   (let [r (rand 1)
         selection (filter (fn [x] (and (>= r (:lower x)) (<= r (:upper x)))) rouletteWheel)]
-    (assert (= 1 (count selection)))
-    (:result (first selection))))
+    (cond
+      (= 1 (count selection)) (:result (first selection))
+      :else (first rouletteWheel))))
 
 (defn breed [trainResults newPopulationSize maxLayers maxNodesPerLayer outputArity]
   (let [parents (getBestResults (int (* 0.5 newPopulationSize)) trainResults)

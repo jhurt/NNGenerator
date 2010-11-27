@@ -58,7 +58,7 @@
           (if (= (JFileChooser/APPROVE_OPTION) (. fileChooser (showOpenDialog testBlackjackBtn)))
             (testBlackjack (.getSelectedFile fileChooser)))))))))
 
-(def testBlackjackDealerBtn (doto (new JButton "Test Blackjack")
+(def testBlackjackDealerBtn (doto (new JButton "Test Blackjack Dealer")
   (.addActionListener
     (proxy [ActionListener] []
       (actionPerformed [e]

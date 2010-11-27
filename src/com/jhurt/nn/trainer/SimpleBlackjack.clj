@@ -172,7 +172,7 @@
   (let [input (getEncodedHands (getHandValue playerHand) ((first (rest dealerHand)) :value))
         output (BP/calculateOutput layers input weights)]
     ;(println "input " input ", output " output)
-    (if (> (first output) 0) true false)))
+    (if (> (first output) 0.5) true false)))
 
 (defn playWithTrainedPlayer
   "play with a trained player NN. return a 0 for a tie, -1 for a loss, 1 for a win"
