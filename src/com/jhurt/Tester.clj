@@ -105,11 +105,11 @@
     (actionPerformed [e]
       (let [layers (Common/randomNetworkLayers 2 5 4)
             weights (Common/getRandomWeightMatrices layers 16 4)
-            cycles 5
+            cycles 5000
             alpha 0.7
             gamma -0.5
             nn (BP/trainNetwork cycles layers getTrainingDatum weights alpha gamma)
-            iterations 1
+            iterations 1000
             results (getOcrResults layers (nn :weights) iterations)
             correct (filter (fn [x] (= x 1)) results)
             incorrect (filter (fn [x] (= x 0)) results)]

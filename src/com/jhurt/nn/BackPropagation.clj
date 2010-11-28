@@ -79,8 +79,6 @@
                 ;(vectorByMatrix (last errors) (first w)))
                 (matrixByVector (first w) (last errors)))
             error (map * dv difference)]
-        (println "difference :" difference)
-        (println "dv " dv)
         (if (= 0 (count errors))
           (recur (rest o) (rest d) w (conj errors error))
           (recur (rest o) (rest d) (rest w) (conj errors error)))))))
@@ -146,14 +144,6 @@
                 (map matrixAdd deltas (multiplyScalar previousDeltas alpha)))
             ;get rms error
             rmsError (calculateRmsError (first errors))]
-        (println "\n\nweights")
-        (doall (map (fn [x] (println (count x))) weights))
-        (println "errors: " errors)
-
-        (println "deltas: " (count deltas))
-         (doall (map (fn [x] (println (count x))) deltas))
-        (println "deltas with momentum: " (count deltasWithMomentum))
-
         ;update weights and recurse step
         (recur (dec n)
           (map matrixAdd weights deltasWithMomentum)

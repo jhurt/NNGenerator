@@ -44,17 +44,20 @@
         paddedStrings (map (fn [x] (let [pad (- 4 (count x))] (str (reduce str (repeat pad "0")) x))) binaryStrings)]
     (map (fn [x] (map (fn [y] (Integer/parseInt (str y))) (.toCharArray x))) paddedStrings)))
 
-(defn- extractGrid
+(defn extractGrid
   "extract a 4x4 grid from the image in the form of a one dimensional array"
   [image]
+  (assert (= 28 (count image)))
+  (assert (= 28 (count (last image))))
   (loop [i 0 j 0 grid []]
-    (let [upperRow (* 7 (inc i)) upperCol (* 7 (inc j))
+    (let [upperRow (* 7 (inc i))
+          upperCol (* 7 (inc j))
           rows (subvec image (* i 7) upperRow)
           totalPixels (reduce + (flatten (map (fn [row] (subvec row (* j 7) upperCol)) rows)))
           averagePixel (/ totalPixels 49)
           gridVal (if (< averagePixel 60) 0 1)]
       (cond
-        (= 3 j) grid
+        (and (= 3 j) (= 3 i)) (let [g (conj grid gridVal)] (assert (= 16 (count g))) g)
         (= 3 i) (recur 0 (inc j) (conj grid gridVal))
         :else (recur (inc i) j (conj grid gridVal))))))
 
@@ -124,4 +127,3 @@
          testDataWriter (new FileWriter (new File testData))]
          (doto trainingDataWriter (.write (serialize (getInputOutputPairs trainingImages trainingLabels))) (.flush) (.close))
          (doto testDataWriter (.write (serialize (getInputOutputPairs testImages testLabels))) (.flush) (.close))))
-
