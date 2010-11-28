@@ -18,6 +18,7 @@
   (:require [com.jhurt.nn.Input :as Input])
   (:require [com.jhurt.nn.Common :as Common])
   (:require [com.jhurt.nn.BackPropagation :as BP])
+  (:require [com.jhurt.Graph :as Graph])
   (:use [com.jhurt.ThreadUtils])
   (:use [com.jhurt.nn.trainer.SimpleBlackjack :only (getBlackjackResults testBlackjackDealer)])
   (:use [com.jhurt.nn.trainer.OCR :only (getOcrResults getTrainingDatum)])
@@ -30,7 +31,7 @@
   '(java.awt.image BufferedImage ImageObserver FilteredImageSource)
   '(java.io File)
   '(javax.imageio ImageIO)
-  '(java.awt Graphics))
+  '(java.awt Color Graphics BorderLayout))
 
 (def blackjackIterations 50000)
 
@@ -70,7 +71,7 @@
 
 (defn testOcr [nnFile]
   (let [nn (deserializeFile nnFile)
-        iterations 2000
+        iterations 10000
         results (getOcrResults (nn :layers) (nn :weights) iterations)
         correct (filter (fn [x] (= x 1)) results)
         incorrect (filter (fn [x] (= x 0)) results)]
@@ -85,20 +86,35 @@
           (if (= (JFileChooser/APPROVE_OPTION) (. fileChooser (showOpenDialog testOcrBtn)))
             (testOcr (.getSelectedFile fileChooser)))))))))
 
+(defn launchGraphWindow [canvas]
+  (let [frame (new JFrame)
+        panel
+        (doto (new JPanel)
+          (.setLayout (new BorderLayout))
+          (.setBackground Color/WHITE)
+          (.add canvas BorderLayout/CENTER))]
+    (doto frame
+      (.add panel)
+      (.setTitle "Resultant Neural Network")
+      (.pack)
+      (.setSize 800 600)
+      (.setVisible true))))
+
 (def trainOcrBtn (doto (new JButton "Train OCR")
   (.addActionListener (proxy [ActionListener] []
     (actionPerformed [e]
-      (let [layers (Common/randomNetworkLayers 1 500 4)
+      (let [layers (Common/randomNetworkLayers 2 5 4)
             weights (Common/getRandomWeightMatrices layers 16 4)
-            cycles 30000
+            cycles 5
             alpha 0.7
             gamma -0.5
             nn (BP/trainNetwork cycles layers getTrainingDatum weights alpha gamma)
-            iterations 10000
+            iterations 1
             results (getOcrResults layers (nn :weights) iterations)
             correct (filter (fn [x] (= x 1)) results)
             incorrect (filter (fn [x] (= x 0)) results)]
-        (println "correct: " (count correct) ", incorrect: " (count incorrect))))))))
+        (println "correct: " (count correct) ", incorrect: " (count incorrect))
+        (launchGraphWindow (Graph/getNewCanvas (nn :weights) layers 16 4))))))))
 
 (def buttonPanel (doto (new JPanel)
   (.add testBlackjackBtn)
@@ -111,5 +127,5 @@
     (doto frame
       (.setDefaultCloseOperation (JFrame/EXIT_ON_CLOSE))
       (.add buttonPanel)
-      (.setSize 300 100)
+      (.setSize 300 200)
       (.setVisible true))))
